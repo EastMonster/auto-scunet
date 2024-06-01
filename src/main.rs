@@ -6,7 +6,7 @@ use tokio::runtime::Runtime;
 
 use app::AutoScunetApp;
 use config::{load_config, AppConfig};
-use login::{get_query_string, login};
+use login::{check_status, get_online_user_info, login, Status};
 use toast::*;
 
 mod app;
@@ -38,24 +38,33 @@ fn main() -> Result<(), eframe::Error> {
 }
 
 fn pre_login(config: &AppConfig) {
-    match get_query_string() {
-        Ok(Some(qs)) => {
+    match check_status() {
+        Ok(Status::NotLoggedIn(qs)) => {
             match login(
                 config.student_id.clone(),
                 config.password.clone(),
                 config.service,
                 qs,
             ) {
-                Ok(_) => {
-                    show_login_success_toast();
+                Ok(ui) => {
+                    match get_online_user_info(ui) {
+                        Ok(j) => show_login_success_toast(
+                            j.userName,
+                            j.welcomeTip,
+                            config.service,
+                            j.left_hour,
+                        ),
+                        Err(e) => show_login_fail_toast(e.to_string()),
+                    }
                     exit(0);
                 }
+
                 Err(e) => {
                     show_login_fail_toast(e.to_string());
                 }
             }
         }
-        Ok(None) => {
+        Ok(Status::LoggedIn(_)) => {
             show_logged_in_toast();
         }
         Err(e) => {

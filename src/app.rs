@@ -8,7 +8,8 @@ use std::{
 
 use crate::{
     config::{save_config, AppConfig, Service},
-    login::{async_login, LoginResult},
+    login::{async_login, get_online_user_info, LoginResult},
+    show_unknown_error_toast,
     toast::show_login_success_toast,
 };
 
@@ -42,12 +43,19 @@ impl App for AutoScunetApp {
             match response {
                 LoginResult::LoggedIn => {
                     self.status = "已登录, 配置已更新".to_string();
-                    save_config(&self.config).unwrap();
+                    save_config(&self.config).unwrap_or_else(show_unknown_error_toast);
                 }
-                LoginResult::LoginSuccess => {
+                LoginResult::LoginSuccess(ui) => {
                     self.status = "登录成功, 配置已更新".to_string();
-                    save_config(&self.config).unwrap();
-                    show_login_success_toast();
+                    save_config(&self.config).unwrap_or_else(show_unknown_error_toast);
+
+                    let j = get_online_user_info(ui).unwrap();
+                    show_login_success_toast(
+                        j.userName,
+                        j.welcomeTip,
+                        self.config.service,
+                        j.left_hour,
+                    );
                     exit(0);
                 }
                 LoginResult::LoginFail(msg) => self.status = format!("登录失败: {}", msg),
