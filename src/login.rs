@@ -48,9 +48,6 @@ pub struct OnlineUserInfoJson {
     pub left_hour: Option<f64>,
 }
 
-/// 获取登录时需要的 queryString 参数，同时也用来检查是否已登录
-///
-/// 如果未登录，返回 queryString；否则返回 [`None`]
 pub fn check_status() -> Result<Status> {
     let res = reqwest::blocking::get("http://192.168.2.135")?;
 
