@@ -49,14 +49,18 @@ impl App for AutoScunetApp {
                     self.status = "登录成功, 配置已更新".to_string();
                     save_config(&self.config).unwrap_or_else(show_unknown_error_toast);
 
-                    let j = get_online_user_info(ui).unwrap();
-                    show_login_success_toast(
-                        j.userName,
-                        j.welcomeTip,
-                        self.config.service,
-                        j.left_hour,
-                    );
-                    exit(0);
+                    match get_online_user_info(ui) {
+                        Ok(j) => {
+                            show_login_success_toast(
+                                j.userName,
+                                j.welcomeTip,
+                                self.config.service,
+                                j.left_hour,
+                            );
+                            exit(0);
+                        }
+                        Err(e) => self.status = e.to_string(),
+                    }
                 }
                 LoginResult::LoginFail(msg) => self.status = format!("登录失败: {}", msg),
             }
