@@ -83,14 +83,19 @@ pub fn get_online_user_info(user_index: String) -> Result<OnlineUserInfoJson> {
         let mut json: OnlineUserInfoJson = res.json()?;
 
         if json.result == "success" {
-            let left_second = &serde_json::from_str::<Value>(json.ballInfo.as_ref().unwrap())?[1]["value"]
-                .as_str()
-                .unwrap()
-                .parse::<i32>();
-            let left_hour = match left_second {
-                Ok(v) => Some((*v as f64 / 3600.0 * 10.0).round() / 10.0),
-                Err(_) => None,
+            let left_second_str =
+                &serde_json::from_str::<Value>(json.ballInfo.as_ref().unwrap())?[1]["value"];
+
+            let left_hour = if left_second_str.is_null() {
+                None
+            } else {
+                let left_second = left_second_str.as_str().unwrap().parse::<i32>();
+                match left_second {
+                    Ok(v) => Some((v as f64 / 3600.0 * 10.0).round() / 10.0),
+                    Err(_) => None,
+                }
             };
+
             json.left_hour = left_hour;
             json.ballInfo.take(); // 不想再多看一眼
 
