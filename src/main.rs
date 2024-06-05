@@ -48,27 +48,24 @@ fn pre_login(config: &AppConfig) {
             ) {
                 Ok(ui) => {
                     match get_online_user_info(ui) {
-                        Ok(j) => show_login_success_toast(
-                            j.userName,
-                            j.welcomeTip,
-                            config.service,
-                            j.left_hour,
-                        ),
-                        Err(e) => show_login_fail_toast(e.to_string()),
+                        Ok(j) => {
+                            Toast::success(j.userName, j.welcomeTip, config.service, j.left_hour)
+                        }
+                        Err(e) => Toast::fail(e.to_string()),
                     }
                     exit(0);
                 }
 
                 Err(e) => {
-                    show_login_fail_toast(e.to_string());
+                    Toast::fail(e.to_string());
                 }
             }
         }
         Ok(Status::LoggedIn(_)) => {
-            show_logged_in_toast();
+            Toast::logged_in();
         }
         Err(e) => {
-            show_login_fail_toast(e.to_string());
+            Toast::fail(e.to_string());
         }
     }
 }
