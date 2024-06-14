@@ -5,7 +5,7 @@ use std::process::exit;
 use tokio::runtime::Runtime;
 
 use app::AutoScunetApp;
-use config::{load_config, AppConfig};
+use config::{load_config, AppConfig, VERSION};
 use login::{check_status, get_online_user_info, login, Status};
 use toast::*;
 
@@ -22,7 +22,8 @@ fn main() -> Result<(), eframe::Error> {
         viewport: egui::ViewportBuilder::default()
             .with_inner_size([270.0, 180.0])
             .with_resizable(false)
-            .with_maximize_button(false),
+            .with_maximize_button(false)
+            .with_minimize_button(false),
         ..Default::default()
     };
 
@@ -31,7 +32,7 @@ fn main() -> Result<(), eframe::Error> {
     pre_login(&config);
 
     eframe::run_native(
-        "SCUNET!",
+        &format!("AutoSCUNET v{}", VERSION),
         options,
         Box::new(|cc| Box::new(AutoScunetApp::new(cc, config))),
     )

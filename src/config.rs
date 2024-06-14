@@ -1,6 +1,8 @@
 use anyhow::Result;
 use serde_derive::{Deserialize, Serialize};
 
+pub const VERSION: &str = env!("CARGO_PKG_VERSION");
+
 const CONFIG_FILE: &str = "auto-scunet.toml";
 
 #[derive(Debug, Default, Serialize, Deserialize)]
