@@ -44,17 +44,17 @@ impl App for AutoScunetApp {
                     self.status = "已登录, 配置已更新".to_string();
                     save_config(&self.config).unwrap_or_else(Toast::error);
                 }
-                LoginResult::LoginSuccess(ui) => {
+                LoginResult::LoginSuccess(user_index) => {
                     self.status = "登录成功, 配置已更新".to_string();
                     save_config(&self.config).unwrap_or_else(Toast::error);
 
-                    match get_online_user_info(&ui) {
-                        Ok(j) => {
+                    match get_online_user_info(&user_index) {
+                        Ok(json) => {
                             Toast::success(
-                                j.userName,
-                                j.welcomeTip,
+                                json.userName,
+                                json.welcomeTip,
                                 self.config.service,
-                                j.left_hour,
+                                json.left_hour,
                             );
                             exit(0);
                         }

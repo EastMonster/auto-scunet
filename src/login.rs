@@ -1,12 +1,14 @@
 use std::{sync::mpsc::Sender, thread::sleep, time::Duration};
 
 use anyhow::Result;
-use reqwest::Url;
+use reqwest::{header::CONTENT_TYPE, Url};
 use rsa::BigUint;
 use serde_derive::Deserialize;
 use serde_json::{json, Value};
 
 use crate::config::Service;
+
+const BASE_URL: &str = "http://192.168.2.135";
 
 pub enum LoginResult {
     /// 已登录
@@ -48,7 +50,7 @@ pub struct OnlineUserInfoJson {
 }
 
 pub fn check_status() -> Result<Status> {
-    let res = reqwest::blocking::get("http://192.168.2.135")?;
+    let res = reqwest::blocking::get(BASE_URL)?;
 
     if res.status().is_server_error() {
         return Err(anyhow::anyhow!("连接超时"));
@@ -73,13 +75,15 @@ pub fn get_online_user_info(user_index: &str) -> Result<OnlineUserInfoJson> {
     let mut attempts = 0;
 
     loop {
-        let res = client
-            .post("http://192.168.2.135/eportal/InterFace.do?method=getOnlineUserInfo")
-            .header("Content-Type", "application/x-www-form-urlencoded")
+        let mut json: OnlineUserInfoJson = client
+            .post(format!(
+                "{}/eportal/InterFace.do?method=getOnlineUserInfo",
+                BASE_URL
+            ))
+            .header(CONTENT_TYPE, "application/x-www-form-urlencoded")
             .form(&[("userIndex", user_index)])
-            .send()?;
-
-        let mut json: OnlineUserInfoJson = res.json()?;
+            .send()?
+            .json()?;
 
         if json.result == "success" {
             let left_second_str =
@@ -112,13 +116,13 @@ pub fn get_online_user_info(user_index: &str) -> Result<OnlineUserInfoJson> {
 
 pub fn encrypt_password(password: &str, query_string: &str) -> Result<String> {
     let url = Url::parse(&format!("a:?{}", query_string))?;
-    let (_, mac_address) = url.query_pairs().find(|(k, _)| k == "mac").unwrap();
+    let mac_address = url.query_pairs().find(|(k, _)| k == "mac").unwrap().1;
 
     let client = reqwest::blocking::Client::new();
 
     let res: PageInfoJson = client
-        .post("http://192.168.2.135/eportal/InterFace.do?method=pageInfo")
-        .form(&json!({"queryString": query_string}))
+        .post(format!("{}/eportal/InterFace.do?method=pageInfo", BASE_URL))
+        .form(&[("queryString", query_string)])
         .send()?
         .json()?;
 
@@ -130,15 +134,10 @@ pub fn encrypt_password(password: &str, query_string: &str) -> Result<String> {
     Ok(encrypted_password)
 }
 
-pub fn login(
-    stu_id: &str,
-    password: &str,
-    service: Service,
-    query_string: &str,
-) -> Result<String> {
+pub fn login(stu_id: &str, password: &str, service: Service, query_string: &str) -> Result<String> {
     let client = reqwest::blocking::Client::new();
 
-    let password = encrypt_password(&password, &query_string)?;
+    let password = encrypt_password(password, query_string)?;
 
     let login_form = json!({
         "userId": stu_id,
@@ -148,18 +147,16 @@ pub fn login(
         "passwordEncrypt": true,
     });
 
-    let res = client
-        .post("http://192.168.2.135/eportal/InterFace.do?method=login")
-        .header("Content-Type", "application/x-www-form-urlencoded")
+    let json: LoginResultJson = client
+        .post(format!("{}/eportal/InterFace.do?method=login", BASE_URL))
+        .header(CONTENT_TYPE, "application/x-www-form-urlencoded")
         .form(&login_form)
-        .send()?;
+        .send()?
+        .json()?;
 
-    let text: LoginResultJson = res.json()?;
-
-    if let Status::LoggedIn(ui) = check_status()? {
-        Ok(ui)
-    } else {
-        Err(anyhow::anyhow!("{}", text.message))
+    match check_status()? {
+        Status::LoggedIn(user_index) => Ok(user_index),
+        _ => Err(anyhow::anyhow!("{}", json.message)),
     }
 }
 
@@ -188,7 +185,7 @@ pub fn async_login(
             .await
             .unwrap()
         {
-            Ok(ui) => tx.send(LoginResult::LoginSuccess(ui)).unwrap(),
+            Ok(user_index) => tx.send(LoginResult::LoginSuccess(user_index)).unwrap(),
             Err(e) => tx.send(LoginResult::LoginFail(e.to_string())).unwrap(),
         }
     });
