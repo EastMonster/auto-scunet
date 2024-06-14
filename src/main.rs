@@ -42,13 +42,13 @@ fn pre_login(config: &AppConfig) {
     match check_status() {
         Ok(Status::NotLoggedIn(qs)) => {
             match login(
-                config.student_id.clone(),
-                config.password.clone(),
+                &config.student_id,
+                &config.password,
                 config.service,
-                qs,
+                &qs,
             ) {
                 Ok(ui) => {
-                    match get_online_user_info(ui) {
+                    match get_online_user_info(&ui) {
                         Ok(j) => {
                             Toast::success(j.userName, j.welcomeTip, config.service, j.left_hour)
                         }

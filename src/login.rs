@@ -68,7 +68,7 @@ pub fn check_status() -> Result<Status> {
     }
 }
 
-pub fn get_online_user_info(user_index: String) -> Result<OnlineUserInfoJson> {
+pub fn get_online_user_info(user_index: &str) -> Result<OnlineUserInfoJson> {
     let client = reqwest::blocking::Client::new();
     let mut attempts = 0;
 
@@ -76,7 +76,7 @@ pub fn get_online_user_info(user_index: String) -> Result<OnlineUserInfoJson> {
         let res = client
             .post("http://192.168.2.135/eportal/InterFace.do?method=getOnlineUserInfo")
             .header("Content-Type", "application/x-www-form-urlencoded")
-            .form(&[("userIndex", user_index.clone())])
+            .form(&[("userIndex", user_index)])
             .send()?;
 
         let mut json: OnlineUserInfoJson = res.json()?;
@@ -131,10 +131,10 @@ pub fn encrypt_password(password: &str, query_string: &str) -> Result<String> {
 }
 
 pub fn login(
-    stu_id: String,
-    password: String,
+    stu_id: &str,
+    password: &str,
     service: Service,
-    query_string: String,
+    query_string: &str,
 ) -> Result<String> {
     let client = reqwest::blocking::Client::new();
 
@@ -184,7 +184,7 @@ pub fn async_login(
             }
         };
 
-        match tokio::task::spawn_blocking(move || login(stu_id, password, service, query_string))
+        match tokio::task::spawn_blocking(move || login(&stu_id, &password, service, &query_string))
             .await
             .unwrap()
         {

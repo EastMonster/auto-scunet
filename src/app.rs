@@ -48,7 +48,7 @@ impl App for AutoScunetApp {
                     self.status = "登录成功, 配置已更新".to_string();
                     save_config(&self.config).unwrap_or_else(Toast::error);
 
-                    match get_online_user_info(ui) {
+                    match get_online_user_info(&ui) {
                         Ok(j) => {
                             Toast::success(
                                 j.userName,
