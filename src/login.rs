@@ -1,6 +1,8 @@
 use std::{sync::mpsc::Sender, thread::sleep, time::Duration};
 
 use anyhow::Result;
+use reqwest::Url;
+use rsa::BigUint;
 use serde_derive::Deserialize;
 use serde_json::{json, Value};
 
@@ -25,6 +27,13 @@ pub enum Status {
 #[derive(Debug, Deserialize)]
 struct LoginResultJson {
     message: String,
+}
+
+#[allow(non_snake_case)]
+#[derive(Debug, Deserialize)]
+struct PageInfoJson {
+    publicKeyModulus: String,
+    publicKeyExponent: String,
 }
 
 #[allow(non_snake_case)]
@@ -101,6 +110,26 @@ pub fn get_online_user_info(user_index: String) -> Result<OnlineUserInfoJson> {
     }
 }
 
+pub fn encrypt_password(password: &str, query_string: &str) -> Result<String> {
+    let url = Url::parse(&format!("a:?{}", query_string))?;
+    let (_, mac_address) = url.query_pairs().find(|(k, _)| k == "mac").unwrap();
+
+    let client = reqwest::blocking::Client::new();
+
+    let res: PageInfoJson = client
+        .post("http://192.168.2.135/eportal/InterFace.do?method=pageInfo")
+        .form(&json!({"queryString": query_string}))
+        .send()?
+        .json()?;
+
+    let rsa_n = BigUint::parse_bytes(res.publicKeyModulus.as_bytes(), 16).unwrap();
+    let rsa_e = BigUint::parse_bytes(res.publicKeyExponent.as_bytes(), 16).unwrap();
+    let msg = BigUint::from_bytes_be(format!("{}>{}", password, mac_address).as_bytes());
+    let encrypted_password = msg.modpow(&rsa_e, &rsa_n).to_str_radix(16);
+
+    Ok(encrypted_password)
+}
+
 pub fn login(
     stu_id: String,
     password: String,
@@ -109,12 +138,14 @@ pub fn login(
 ) -> Result<String> {
     let client = reqwest::blocking::Client::new();
 
+    let password = encrypt_password(&password, &query_string)?;
+
     let login_form = json!({
         "userId": stu_id,
         "password": password,
         "service": service.to_param(),
         "queryString": query_string,
-        "passwordEncrypt": false,
+        "passwordEncrypt": true,
     });
 
     let res = client
