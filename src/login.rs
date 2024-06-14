@@ -1,8 +1,8 @@
 use std::{sync::mpsc::Sender, thread::sleep, time::Duration};
 
 use anyhow::Result;
-use serde_derive::{Deserialize, Serialize};
-use serde_json::Value;
+use serde_derive::Deserialize;
+use serde_json::{json, Value};
 
 use crate::config::Service;
 
@@ -20,16 +20,6 @@ pub enum Status {
     NotLoggedIn(String),
     /// 当前状态为已登录，返回 userIndex
     LoggedIn(String),
-}
-
-#[allow(non_snake_case)]
-#[derive(Debug, Serialize)]
-struct LoginForm {
-    userId: String,
-    password: String,
-    service: String,
-    queryString: String,
-    passwordEncrypt: bool,
 }
 
 #[derive(Debug, Deserialize)]
@@ -118,20 +108,19 @@ pub fn login(
     query_string: String,
 ) -> Result<String> {
     let client = reqwest::blocking::Client::new();
-    // 设置连接超时时间
 
-    let params = LoginForm {
-        userId: stu_id,
-        password,
-        service: service.to_param().to_string(),
-        queryString: query_string,
-        passwordEncrypt: false,
-    };
+    let login_form = json!({
+        "userId": stu_id,
+        "password": password,
+        "service": service.to_param(),
+        "queryString": query_string,
+        "passwordEncrypt": false,
+    });
 
     let res = client
         .post("http://192.168.2.135/eportal/InterFace.do?method=login")
         .header("Content-Type", "application/x-www-form-urlencoded")
-        .form(&params)
+        .form(&login_form)
         .send()?;
 
     let text: LoginResultJson = res.json()?;
