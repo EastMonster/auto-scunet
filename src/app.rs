@@ -6,11 +6,7 @@ use std::{
     sync::mpsc::{Receiver, Sender},
 };
 
-use crate::{
-    config::{save_config, AppConfig, Service},
-    login::{async_login, get_online_user_info, LoginResult},
-    Toast,
-};
+use crate::{config::*, login::*, Toast};
 
 pub struct AutoScunetApp {
     tx: Sender<LoginResult>,
@@ -99,7 +95,9 @@ impl App for AutoScunetApp {
                             "中国联通",
                         );
                     });
-                ui.add_space(ui.available_width() - 33.5); // don't ask me why
+                if ui.checkbox(&mut self.config.on_boot, "开机启动").changed() {
+                    on_boot_change(self.config.on_boot)
+                }
                 if ui
                     .add_enabled(!self.logining, Button::new("登录"))
                     .clicked()

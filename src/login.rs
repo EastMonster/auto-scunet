@@ -150,6 +150,11 @@ pub fn check_wifi() -> Result<()> {
 pub fn check_status() -> Result<Status> {
     check_wifi()?;
 
+    // 在 Release 模式下开机启动时这里会炸掉，原因不明
+    // 只能整个 workaround 等待 2 秒
+    if *ON_BOOT.get().unwrap() {
+        sleep(Duration::from_secs(2));
+    }
     let res = reqwest::blocking::get(BASE_URL)?;
 
     if res.status().is_server_error() {

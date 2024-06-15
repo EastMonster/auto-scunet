@@ -20,7 +20,7 @@ fn main() -> Result<(), eframe::Error> {
 
     let options = eframe::NativeOptions {
         viewport: egui::ViewportBuilder::default()
-            .with_inner_size([270.0, 180.0])
+            .with_inner_size([302.0, 180.0]) // I'm not good at this
             .with_resizable(false)
             .with_maximize_button(false)
             .with_minimize_button(false),
@@ -29,9 +29,6 @@ fn main() -> Result<(), eframe::Error> {
 
     let config = load_config().unwrap_or_default();
 
-    let args: Vec<String> = std::env::args().collect();
-    ON_BOOT.set(args.contains(&String::from("--boot"))).unwrap(); // 唯一一处 set, unwrap is safe
-    
     pre_login(&config);
 
     eframe::run_native(
@@ -65,6 +62,9 @@ fn pre_login(config: &AppConfig) {
         }
         Ok(Status::LoggedIn(_)) => {
             Toast::logged_in();
+            if *ON_BOOT.get().unwrap() {
+                exit(0);
+            }
         }
         Err(e) => {
             Toast::fail(e.to_string());
