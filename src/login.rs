@@ -1,10 +1,21 @@
-use std::{sync::mpsc::Sender, thread::sleep, time::Duration};
+use std::{ffi::c_void, sync::mpsc::Sender, thread::sleep, time::Duration};
 
 use anyhow::Result;
 use reqwest::{header::CONTENT_TYPE, Url};
 use rsa::BigUint;
 use serde_derive::Deserialize;
 use serde_json::{json, Value};
+use windows::{
+    core::PCSTR,
+    Win32::{
+        Foundation::{HANDLE, WIN32_ERROR},
+        NetworkManagement::WiFi::{
+            wlan_intf_opcode_current_connection, WlanCloseHandle, WlanEnumInterfaces,
+            WlanFreeMemory, WlanOpenHandle, WlanQueryInterface, WLAN_CONNECTION_ATTRIBUTES,
+            WLAN_INTERFACE_INFO_LIST,
+        },
+    },
+};
 
 use crate::config::Service;
 
@@ -49,7 +60,67 @@ pub struct OnlineUserInfoJson {
     pub left_hour: Option<f64>,
 }
 
+// ref: https://www.reddit.com/r/rust/comments/zhv63t/comment/izpp30r
+pub fn check_wifi() -> Result<()> {
+    // SAFETY: 抄的
+    unsafe {
+        let mut negotiated_version: u32 = 0;
+        let mut wlan_handle: HANDLE = HANDLE::default();
+
+        let res = WlanOpenHandle(2, None, &mut negotiated_version, &mut wlan_handle);
+        if WIN32_ERROR(res).is_err() {
+            return Err(anyhow::anyhow!("无法打开 WLAN 句柄. 错误码: {}", res));
+        }
+
+        let mut info_list_ptr: *mut WLAN_INTERFACE_INFO_LIST = std::ptr::null_mut();
+
+        let res = WlanEnumInterfaces(wlan_handle, None, &mut info_list_ptr);
+        if WIN32_ERROR(res).is_err() {
+            return Err(anyhow::anyhow!("无法获取 WLAN 接口列表. 错误码: {}", res));
+        }
+
+        let guid = (*info_list_ptr).InterfaceInfo[0].InterfaceGuid;
+
+        let mut data_size: u32 = 0;
+        let mut ppdata: *mut c_void = std::ptr::null_mut();
+
+        let res = WlanQueryInterface(
+            wlan_handle,
+            &guid,
+            wlan_intf_opcode_current_connection,
+            None,
+            &mut data_size,
+            &mut ppdata,
+            None,
+        );
+        if WIN32_ERROR(res).is_err() {
+            return Err(anyhow::anyhow!("无法获取 WLAN 连接属性. 错误码: {}", res));
+        }
+
+        let wlan_connection_attributes = ppdata as *mut WLAN_CONNECTION_ATTRIBUTES;
+
+        let ssid_arr = (*wlan_connection_attributes)
+            .wlanAssociationAttributes
+            .dot11Ssid
+            .ucSSID;
+
+        let ssid = PCSTR::from_raw(ssid_arr.as_ptr()).to_string().unwrap();
+
+        WlanCloseHandle(wlan_handle, None);
+        WlanFreeMemory(info_list_ptr as _);
+        WlanFreeMemory(ppdata);
+
+        if ssid != "SCUNET" {
+            Err(anyhow::anyhow!("未连接到 SCUNET"))
+        } else {
+            Ok(())
+        }
+    }
+}
+
 pub fn check_status() -> Result<Status> {
+    check_wifi()?;
+
     let res = reqwest::blocking::get(BASE_URL)?;
 
     if res.status().is_server_error() {
