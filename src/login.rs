@@ -1,6 +1,6 @@
 use std::{ffi::c_void, sync::mpsc::Sender, thread::sleep, time::Duration};
 
-use anyhow::Result;
+use anyhow::{anyhow, Result};
 use reqwest::{header::CONTENT_TYPE, Url};
 use rsa::BigUint;
 use serde_derive::Deserialize;
@@ -8,7 +8,7 @@ use serde_json::{json, Value};
 use windows::{
     core::PCSTR,
     Win32::{
-        Foundation::{HANDLE, WIN32_ERROR},
+        Foundation::HANDLE,
         NetworkManagement::WiFi::{
             wlan_intf_opcode_current_connection, WlanCloseHandle, WlanEnumInterfaces,
             WlanFreeMemory, WlanOpenHandle, WlanQueryInterface, WLAN_CONNECTION_ATTRIBUTES,
@@ -17,7 +17,7 @@ use windows::{
     },
 };
 
-use crate::config::Service;
+use crate::config::{Service, ON_BOOT};
 
 const BASE_URL: &str = "http://192.168.2.135";
 
@@ -64,56 +64,85 @@ pub struct OnlineUserInfoJson {
 pub fn check_wifi() -> Result<()> {
     // SAFETY: 抄的
     unsafe {
-        let mut negotiated_version: u32 = 0;
-        let mut wlan_handle: HANDLE = HANDLE::default();
+        let max_attempt = if *ON_BOOT.get().unwrap() { 5 } else { 1 };
+        let mut attempts = 0;
+        let mut last_error;
+        loop {
+            let mut negotiated_version: u32 = 0;
+            let mut wlan_handle: HANDLE = HANDLE::default();
 
-        let res = WlanOpenHandle(2, None, &mut negotiated_version, &mut wlan_handle);
-        if WIN32_ERROR(res).is_err() {
-            return Err(anyhow::anyhow!("无法打开 WLAN 句柄. 错误码: {}", res));
-        }
+            let res = WlanOpenHandle(2, None, &mut negotiated_version, &mut wlan_handle);
+            if res != 0 {
+                last_error = Some(anyhow!("无法打开 WLAN 句柄. 错误码: {}", res));
+                attempts += 1;
+                if attempts >= max_attempt {
+                    return Err(last_error.unwrap());
+                }
+                sleep(Duration::from_secs(1));
+                continue;
+            }
 
-        let mut info_list_ptr: *mut WLAN_INTERFACE_INFO_LIST = std::ptr::null_mut();
+            let mut info_list_ptr: *mut WLAN_INTERFACE_INFO_LIST = std::ptr::null_mut();
 
-        let res = WlanEnumInterfaces(wlan_handle, None, &mut info_list_ptr);
-        if WIN32_ERROR(res).is_err() {
-            return Err(anyhow::anyhow!("无法获取 WLAN 接口列表. 错误码: {}", res));
-        }
+            let res = WlanEnumInterfaces(wlan_handle, None, &mut info_list_ptr);
+            if res != 0 {
+                last_error = Some(anyhow!("无法获取 WLAN 接口列表. 错误码: {}", res));
+                attempts += 1;
+                if attempts >= max_attempt {
+                    return Err(last_error.unwrap());
+                }
+                sleep(Duration::from_secs(1));
+                continue;
+            }
 
-        let guid = (*info_list_ptr).InterfaceInfo[0].InterfaceGuid;
+            let guid = (*info_list_ptr).InterfaceInfo[0].InterfaceGuid;
 
-        let mut data_size: u32 = 0;
-        let mut ppdata: *mut c_void = std::ptr::null_mut();
+            let mut data_size: u32 = 0;
+            let mut ppdata: *mut c_void = std::ptr::null_mut();
 
-        let res = WlanQueryInterface(
-            wlan_handle,
-            &guid,
-            wlan_intf_opcode_current_connection,
-            None,
-            &mut data_size,
-            &mut ppdata,
-            None,
-        );
-        if WIN32_ERROR(res).is_err() {
-            return Err(anyhow::anyhow!("无法获取 WLAN 连接属性. 错误码: {}", res));
-        }
+            let res = WlanQueryInterface(
+                wlan_handle,
+                &guid,
+                wlan_intf_opcode_current_connection,
+                None,
+                &mut data_size,
+                &mut ppdata,
+                None,
+            );
+            if res != 0 {
+                last_error = Some(anyhow!("无法获取 WLAN 连接属性. 错误码: {}", res));
+                attempts += 1;
+                if attempts >= max_attempt {
+                    return Err(last_error.unwrap());
+                }
+                sleep(Duration::from_secs(1));
+                continue;
+            }
 
-        let wlan_connection_attributes = ppdata as *mut WLAN_CONNECTION_ATTRIBUTES;
+            let wlan_connection_attributes = ppdata as *mut WLAN_CONNECTION_ATTRIBUTES;
 
-        let ssid_arr = (*wlan_connection_attributes)
-            .wlanAssociationAttributes
-            .dot11Ssid
-            .ucSSID;
+            let ssid_arr = (*wlan_connection_attributes)
+                .wlanAssociationAttributes
+                .dot11Ssid
+                .ucSSID;
 
-        let ssid = PCSTR::from_raw(ssid_arr.as_ptr()).to_string().unwrap();
+            let ssid = PCSTR::from_raw(ssid_arr.as_ptr()).to_string().unwrap();
 
-        WlanCloseHandle(wlan_handle, None);
-        WlanFreeMemory(info_list_ptr as _);
-        WlanFreeMemory(ppdata);
+            WlanCloseHandle(wlan_handle, None);
+            WlanFreeMemory(info_list_ptr as _);
+            WlanFreeMemory(ppdata);
 
-        if ssid != "SCUNET" {
-            Err(anyhow::anyhow!("未连接到 SCUNET"))
-        } else {
-            Ok(())
+            if ssid != "SCUNET" {
+                last_error = Some(anyhow!("未连接到 SCUNET"));
+                attempts += 1;
+                if attempts >= max_attempt {
+                    return Err(last_error.unwrap());
+                }
+                sleep(Duration::from_secs(1));
+                continue;
+            } else {
+                return Ok(());
+            }
         }
     }
 }
@@ -124,7 +153,7 @@ pub fn check_status() -> Result<Status> {
     let res = reqwest::blocking::get(BASE_URL)?;
 
     if res.status().is_server_error() {
-        return Err(anyhow::anyhow!("连接超时"));
+        return Err(anyhow!("连接超时"));
     }
     // 登录成功会重定向到 /eportal/success.jsp?userIndex=...
     // 链接不带 userIndex 查询参数则说明未登录
@@ -178,7 +207,7 @@ pub fn get_online_user_info(user_index: &str) -> Result<OnlineUserInfoJson> {
             attempts += 1;
             if attempts >= 3 {
                 // 3 次了还让我 wait 那可以 414 了
-                return Err(anyhow::anyhow!("获取在线用户信息失败 (但是可能已登录成功)"));
+                return Err(anyhow!("获取在线用户信息失败 (但是可能已登录成功)"));
             }
             sleep(Duration::from_millis(500));
         }
@@ -227,7 +256,7 @@ pub fn login(stu_id: &str, password: &str, service: Service, query_string: &str)
 
     match check_status()? {
         Status::LoggedIn(user_index) => Ok(user_index),
-        _ => Err(anyhow::anyhow!("{}", json.message)),
+        _ => Err(anyhow!("{}", json.message)),
     }
 }
 

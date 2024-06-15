@@ -1,9 +1,12 @@
 use anyhow::Result;
+use once_cell::sync::OnceCell;
 use serde_derive::{Deserialize, Serialize};
 
 pub const VERSION: &str = env!("CARGO_PKG_VERSION");
 
 const CONFIG_FILE: &str = "auto-scunet.toml";
+
+pub static ON_BOOT: OnceCell<bool> = OnceCell::new();
 
 #[derive(Debug, Default, Serialize, Deserialize)]
 pub struct AppConfig {

@@ -113,6 +113,7 @@ dependencies = [
  "anyhow",
  "eframe",
  "egui",
+ "once_cell",
  "reqwest",
  "rsa",
  "serde",

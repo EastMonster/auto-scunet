@@ -5,7 +5,7 @@ use std::process::exit;
 use tokio::runtime::Runtime;
 
 use app::AutoScunetApp;
-use config::{load_config, AppConfig, VERSION};
+use config::{load_config, AppConfig, ON_BOOT, VERSION};
 use login::{check_status, get_online_user_info, login, Status};
 use toast::*;
 
@@ -29,6 +29,9 @@ fn main() -> Result<(), eframe::Error> {
 
     let config = load_config().unwrap_or_default();
 
+    let args: Vec<String> = std::env::args().collect();
+    ON_BOOT.set(args.contains(&String::from("--boot"))).unwrap(); // 唯一一处 set, unwrap is safe
+    
     pre_login(&config);
 
     eframe::run_native(
