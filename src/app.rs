@@ -63,7 +63,17 @@ impl App for AutoScunetApp {
         }
 
         CentralPanel::default().show(ctx, |ui| {
-            ui.heading("登录到 SCUNET");
+            ui.horizontal(|ui| {
+                ui.heading("登录到 SCUNET");
+                ui.add_space(65.0);
+                if ui
+                    .button(format!(" {} ", egui::special_emojis::GITHUB))
+                    .on_hover_text("查看 GitHub 仓库")
+                    .clicked()
+                {
+                    webbrowser::open(GITHUB_REPO).unwrap();
+                }
+            });
             ui.horizontal(|ui| {
                 ui.label("学号:");
                 ui.text_edit_singleline(&mut self.config.student_id);

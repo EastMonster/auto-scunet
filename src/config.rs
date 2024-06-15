@@ -5,6 +5,8 @@ use serde_derive::{Deserialize, Serialize};
 
 pub const VERSION: &str = env!("CARGO_PKG_VERSION");
 
+pub const GITHUB_REPO: &str = "https://github.com/EastMonster/auto-scunet";
+
 static APP_PWD: OnceCell<String> = OnceCell::new();
 
 const CONFIG_FILE_NAME: &str = "auto-scunet.toml";
