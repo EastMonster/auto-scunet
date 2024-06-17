@@ -26,3 +26,6 @@ winresource = "0.1.17"
 [profile.release]
 strip = true
 opt-level = "z"
+lto = true
+codegen-units = 1
+panic = 'abort'
