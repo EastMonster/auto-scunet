@@ -1,0 +1,19 @@
+[package]
+name = "scunet-login-util"
+description = "四川大学校园网登录工具"
+version = "0.1.0"
+edition = "2021"
+authors = ["East Monster <east_monster@126.com>"]
+
+[dependencies]
+anyhow = "1"
+reqwest = { version = "0.12", features = ["json", "blocking"] }
+rsa = "0.9"
+serde = "1"
+serde_derive = "1"
+serde_json = "1"
+thiserror = "1.0"
+windows = { version = "0.57", features = [
+    "Win32_Foundation",
+    "Win32_NetworkManagement_WiFi",
+] }

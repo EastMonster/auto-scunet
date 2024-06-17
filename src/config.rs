@@ -3,13 +3,15 @@ use auto_launch::AutoLaunchBuilder;
 use once_cell::sync::OnceCell;
 use serde_derive::{Deserialize, Serialize};
 
+use scunet_login_util::*;
+
 pub const VERSION: &str = env!("CARGO_PKG_VERSION");
 
 pub const GITHUB_REPO: &str = "https://github.com/EastMonster/auto-scunet";
 
-static APP_PWD: OnceCell<String> = OnceCell::new();
-
 const CONFIG_FILE_NAME: &str = "auto-scunet.toml";
+
+static APP_PWD: OnceCell<String> = OnceCell::new();
 
 static CONFIG_FILE: OnceCell<String> = OnceCell::new();
 
@@ -23,39 +25,10 @@ pub struct AppConfig {
     pub on_boot: bool,
 }
 
-#[derive(Clone, Copy, Debug, Default, PartialEq, Serialize, Deserialize)]
-pub enum Service {
-    #[default]
-    Internet,
-    ChinaMobile,
-    ChinaTelecom,
-    ChinaUnicom,
-}
-
-impl Service {
-    pub fn to_str(self) -> &'static str {
-        match self {
-            Service::Internet => "校园网",
-            Service::ChinaMobile => "中国移动",
-            Service::ChinaTelecom => "中国电信",
-            Service::ChinaUnicom => "中国联通",
-        }
-    }
-
-    pub fn to_param(self) -> &'static str {
-        match self {
-            Service::Internet => "internet",
-            Service::ChinaMobile => "%E7%A7%BB%E5%8A%A8%E5%87%BA%E5%8F%A3",
-            Service::ChinaTelecom => "%E7%94%B5%E4%BF%A1%E5%87%BA%E5%8F%A3",
-            Service::ChinaUnicom => "%E8%81%94%E9%80%9A%E5%87%BA%E5%8F%A3",
-        }
-    }
-}
-
 pub fn on_boot_change(val: bool) {
     let auto = AutoLaunchBuilder::new()
         .set_app_name("AutoSCUNET")
-        .set_app_path(&std::env::current_exe().unwrap().to_str().unwrap())
+        .set_app_path(std::env::current_exe().unwrap().to_str().unwrap())
         .set_args(&["--boot"])
         .build()
         .unwrap();

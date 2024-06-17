@@ -1,6 +1,6 @@
 use win_toast_notify::{Action, WinToastNotify};
 
-use crate::config::Service;
+use scunet_login_util::Service;
 
 fn new_toast() -> WinToastNotify {
     WinToastNotify::new().set_app_id("Microsoft.Windows.Shell.RunDialog")

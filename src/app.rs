@@ -8,9 +8,20 @@ use std::{
 
 use crate::{config::*, login::*, Toast};
 
+use scunet_login_util::*;
+
+pub enum AppLoginResult {
+    /// 已登录
+    LoggedIn,
+    /// 登录成功，返回结果信息
+    LoginSuccess(OnlineUserInfo),
+    /// 登录失败，返回原因
+    LoginFail(String),
+}
+
 pub struct AutoScunetApp {
-    tx: Sender<LoginResult>,
-    rx: Receiver<LoginResult>,
+    tx: Sender<AppLoginResult>,
+    rx: Receiver<AppLoginResult>,
 
     config: AppConfig,
     logining: bool,
@@ -36,28 +47,24 @@ impl App for AutoScunetApp {
     fn update(&mut self, ctx: &Context, _frame: &mut eframe::Frame) {
         if let Ok(response) = self.rx.try_recv() {
             match response {
-                LoginResult::LoggedIn => {
-                    self.status = "已登录, 配置已更新".to_string();
+                AppLoginResult::LoggedIn => {
+                    self.status = "配置已更新".to_string();
                     save_config(&self.config).unwrap_or_else(Toast::error);
                 }
-                LoginResult::LoginSuccess(user_index) => {
+                AppLoginResult::LoginSuccess(user_info) => {
                     self.status = "登录成功, 配置已更新".to_string();
                     save_config(&self.config).unwrap_or_else(Toast::error);
-
-                    match get_online_user_info(&user_index) {
-                        Ok(json) => {
-                            Toast::success(
-                                json.userName,
-                                json.welcomeTip,
-                                self.config.service,
-                                json.left_hour,
-                            );
-                            exit(0);
-                        }
-                        Err(e) => self.status = e.to_string(),
+                    {
+                        Toast::success(
+                            user_info.userName,
+                            user_info.welcomeTip,
+                            self.config.service,
+                            user_info.left_hour,
+                        );
+                        exit(0);
                     }
                 }
-                LoginResult::LoginFail(msg) => self.status = format!("登录失败: {}", msg),
+                AppLoginResult::LoginFail(msg) => self.status = msg,
             }
             self.logining = false;
         }
@@ -114,7 +121,7 @@ impl App for AutoScunetApp {
                 {
                     self.status = "正在登录...".to_string();
                     self.logining = true;
-                    async_login(
+                    login(
                         self.config.student_id.clone(),
                         self.config.password.clone(),
                         self.config.service,

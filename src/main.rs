@@ -1,18 +1,18 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
+mod app;
+mod config;
+mod login;
+mod toast;
+
 use std::process::exit;
 
 use tokio::runtime::Runtime;
 
 use app::AutoScunetApp;
 use config::{load_config, AppConfig, ON_BOOT, VERSION};
-use login::{check_status, get_online_user_info, login, Status};
+use scunet_login_util::*;
 use toast::*;
-
-mod app;
-mod config;
-mod login;
-mod toast;
 
 fn main() -> Result<(), eframe::Error> {
     let rt = Runtime::new().unwrap();
@@ -39,35 +39,30 @@ fn main() -> Result<(), eframe::Error> {
 }
 
 fn pre_login(config: &AppConfig) {
-    match check_status() {
-        Ok(Status::NotLoggedIn(qs)) => {
-            match login(&config.student_id, &config.password, config.service, &qs) {
-                Ok(user_index) => {
-                    match get_online_user_info(&user_index) {
-                        Ok(json) => Toast::success(
-                            json.userName,
-                            json.welcomeTip,
-                            config.service,
-                            json.left_hour,
-                        ),
-                        Err(e) => Toast::fail(e.to_string()),
-                    }
-                    exit(0);
-                }
+    let login_util = ScunetLoginBuilder::new()
+        .student_id(config.student_id.clone())
+        .password(config.password.clone())
+        .service(config.service)
+        .on_boot(*ON_BOOT.get().unwrap())
+        .build()
+        .unwrap();
 
-                Err(e) => {
-                    Toast::fail(e.to_string());
-                }
-            }
+    match login_util.login() {
+        Ok(LoginStatus::Success(user_info)) => {
+            Toast::success(
+                user_info.userName,
+                user_info.welcomeTip,
+                config.service,
+                user_info.left_hour,
+            );
+            exit(0);
         }
-        Ok(Status::LoggedIn(_)) => {
+        Ok(LoginStatus::HaveLoggedIn) => {
             Toast::logged_in();
             if *ON_BOOT.get().unwrap() {
                 exit(0);
             }
         }
-        Err(e) => {
-            Toast::fail(e.to_string());
-        }
+        Err(e) => Toast::fail(e.to_string()),
     }
 }
