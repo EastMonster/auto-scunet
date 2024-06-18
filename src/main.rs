@@ -39,13 +39,12 @@ fn main() -> Result<(), eframe::Error> {
 }
 
 fn pre_login(config: &AppConfig) {
-    let login_util = ScunetLoginBuilder::new()
+    let login_util = ScunetLoginUtil::builder()
         .student_id(config.student_id.clone())
         .password(config.password.clone())
         .service(config.service)
         .on_boot(*ON_BOOT.get().unwrap())
-        .build()
-        .unwrap();
+        .build();
 
     match login_util.login() {
         Ok(LoginStatus::Success(user_info)) => {

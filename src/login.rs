@@ -12,12 +12,11 @@ pub fn login(
     ctx: egui::Context,
 ) {
     tokio::spawn(async move {
-        let login_util = ScunetLoginBuilder::new()
+        let login_util = ScunetLoginUtil::builder()
             .student_id(stu_id)
             .password(password)
             .service(service)
-            .build()
-            .unwrap();
+            .build();
 
         match tokio::task::spawn_blocking(move || login_util.login())
             .await

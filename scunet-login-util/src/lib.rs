@@ -6,20 +6,37 @@ mod wifi;
 
 use std::{thread::sleep, time::Duration};
 
-use anyhow::{anyhow, Result};
+use anyhow::Result;
 use reqwest::{header::CONTENT_TYPE, Url};
 use rsa::BigUint;
 use serde_json::{json, Value};
+use typed_builder::TypedBuilder;
 
 pub use crate::types::*;
 
 const BASE_URL: &str = "http://192.168.2.135";
 
 /// 用于登录四川大学校园网的工具结构体
+///
+/// ## 使用例
+/// ```
+/// let util = ScunetLoginUtil::builder()
+///     .student_id("2021xxxxxxxxx".into())
+///     .password("ilovescu!".into())
+///     .service(Service::Internet)
+///     .on_boot(false) // 可选项
+///     .build();
+///
+/// match util.login() {
+///     // ...
+/// }
+/// ```
+#[derive(TypedBuilder)]
 pub struct ScunetLoginUtil {
     student_id: String,
     password: String,
     service: Service,
+    #[builder(default = false)]
     on_boot: bool,
 }
 
@@ -44,12 +61,23 @@ impl ScunetLoginUtil {
         self.on_boot = on_boot;
     }
 
+    /// 执行登录操作
+    ///
+    /// 登陆成功时会返回 [`LoginStatus::Success`]，并附带用户信息
+    ///
+    /// ## 使用例
+    /// ```
+    /// match util.login() {
+    ///     Ok(LoginStatus::Success(user_info)) => {},
+    ///     Ok(LoginStatus::HaveLoggedIn) => {},
+    ///     Err(e) => {},
+    /// }
+    /// ```
     pub fn login(&self) -> Result<LoginStatus> {
-        let query_string;
-        match check_status(true, self.on_boot)? {
+        let query_string = match check_status(true, self.on_boot)? {
             Status::LoggedIn(_) => return Ok(LoginStatus::HaveLoggedIn),
-            Status::NotLoggedIn(qs) => query_string = qs,
-        }
+            Status::NotLoggedIn(qs) => qs,
+        };
 
         let client = reqwest::blocking::Client::new();
 
@@ -73,64 +101,6 @@ impl ScunetLoginUtil {
         match check_status(false, false)? {
             Status::LoggedIn(user_index) => Ok(LoginStatus::Success(get_user_info(&user_index)?)),
             _ => Err(LoginError::Fail(json.message).into()),
-        }
-    }
-}
-
-/// 用于构建 [ScunetLoginUtil] 实例
-#[derive(Default)]
-pub struct ScunetLoginBuilder {
-    pub(crate) student_id: Option<String>,
-    pub(crate) password: Option<String>,
-    pub(crate) service: Option<Service>,
-    pub(crate) on_boot: bool,
-}
-
-impl ScunetLoginBuilder {
-    pub fn new() -> Self {
-        Self::default()
-    }
-
-    /// 设置学号
-    pub fn student_id(mut self, student_id: String) -> Self {
-        self.student_id = Some(student_id);
-        self
-    }
-
-    /// 设置密码
-    pub fn password(mut self, password: String) -> Self {
-        self.password = Some(password);
-        self
-    }
-
-    /// 设置服务商
-    pub fn service(mut self, service: Service) -> Self {
-        self.service = Some(service);
-        self
-    }
-
-    /// 设置是否为开机启动状态，默认为 `false`
-    pub fn on_boot(mut self, on_boot: bool) -> Self {
-        self.on_boot = on_boot;
-        self
-    }
-
-    /// 构建 [ScunetLoginUtil] 实例
-    ///
-    /// ## 错误
-    /// 当学号、密码或服务商为空时返回 [Err]
-    pub fn build(self) -> Result<ScunetLoginUtil> {
-        if let (Some(student_id), Some(password), Some(service)) =
-            (self.student_id, self.password, self.service)
-        {
-            Ok(ScunetLoginUtil {
-                student_id,
-                password,
-                service,
-                on_boot: self.on_boot,
-            })
-        } else {
-            Err(anyhow!("未设置学号、密码和服务商"))
         }
     }
 }
@@ -202,7 +172,7 @@ fn get_user_info(user_index: &str) -> Result<OnlineUserInfo> {
             attempts += 1;
             if attempts >= 5 {
                 // 5 次了还让我 wait 那可以 414 了
-                return Err(LoginError::Fail("获取在线用户信息失败 (但可能已登录成功)".into()).into());
+                return Err(LoginError::Fail("获取用户信息失败 (但可能已登录成功)".into()).into());
             }
             sleep(Duration::from_millis(500));
         }
