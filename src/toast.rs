@@ -1,59 +1,78 @@
-use win_toast_notify::{Action, WinToastNotify};
-
-use scunet_login_util::Service;
-
-fn new_toast() -> WinToastNotify {
-    WinToastNotify::new().set_app_id("Microsoft.Windows.Shell.RunDialog")
-}
-
 pub struct Toast;
 
-impl Toast {
-    pub fn success(name: String, tip: String, service: Service, time: Option<f64>) {
-        let main_msg = format!("你已登录到 SCUNET ({})", service.to_str());
-        let mut messages = vec![main_msg];
+#[cfg(target_os = "windows")]
+pub mod windows {
+    use scunet_login_util::Service;
+    use win_toast_notify::{Action, WinToastNotify};
 
-        if let Some(t) = time {
-            let left_hour_msg = format!("剩余时间: {} 小时", t);
-            messages.push(left_hour_msg);
+    use crate::Toast;
+
+    fn new_toast() -> WinToastNotify {
+        WinToastNotify::new().set_app_id("Microsoft.Windows.Shell.RunDialog")
+    }
+
+    impl Toast {
+        pub fn success(name: String, tip: String, service: Service, time: Option<f64>) {
+            let main_msg = format!("你已登录到 SCUNET ({})", service.to_str());
+            let mut messages = vec![main_msg];
+
+            if let Some(t) = time {
+                let left_hour_msg = format!("剩余时间: {} 小时", t);
+                messages.push(left_hour_msg);
+            }
+
+            let messages = messages.iter().map(|s| s.as_str()).collect::<Vec<&str>>();
+
+            new_toast()
+                .set_title(&format!("{}, {}", name, tip))
+                .set_messages(messages)
+                .show()
+                .unwrap();
         }
 
-        let messages = messages.iter().map(|s| s.as_str()).collect::<Vec<&str>>();
+        pub fn fail(msg: String) {
+            new_toast()
+                .set_title("登录失败")
+                .set_messages(vec![&msg, "请手动调整配置或检查网络状态"])
+                .show()
+                .unwrap();
+        }
 
-        new_toast()
-            .set_title(&format!("{}, {}", name, tip))
-            .set_messages(messages)
-            .show()
-            .unwrap();
+        pub fn logged_in() {
+            new_toast()
+                .set_title("你已登录到 SCUNET")
+                .set_messages(vec!["你可以再次\"登录\"来更新配置"])
+                .show()
+                .unwrap();
+        }
+
+        pub fn error(msg: impl ToString) {
+            new_toast()
+                .set_title("😭😭😭 程序出错了")
+                .set_messages(vec![&msg.to_string(), "可以考虑提一个 Issue"])
+                .set_actions(vec![Action {
+                    activation_type: win_toast_notify::ActivationType::Protocol,
+                    action_content: "打开 GitHub Issue 页",
+                    arguments: "https://www.github.com/EastMonster/auto-scunet/issues",
+                    image_url: None,
+                }])
+                .show()
+                .unwrap();
+        }
     }
+}
 
-    pub fn fail(msg: String) {
-        new_toast()
-            .set_title("登录失败")
-            .set_messages(vec![&msg, "请手动调整配置或检查网络状态"])
-            .show()
-            .unwrap();
-    }
+#[cfg(not(target_os = "windows"))]
+mod _others {
+    use scunet_login_util::Service;
 
-    pub fn logged_in() {
-        new_toast()
-            .set_title("你已登录到 SCUNET")
-            .set_messages(vec!["你可以再次\"登录\"来更新配置"])
-            .show()
-            .unwrap();
-    }
+    use crate::Toast;
 
-    pub fn error(msg: impl ToString) {
-        new_toast()
-            .set_title("😭😭😭 程序出错了")
-            .set_messages(vec![&msg.to_string(), "可以考虑提一个 Issue"])
-            .set_actions(vec![Action {
-                activation_type: win_toast_notify::ActivationType::Protocol,
-                action_content: "打开 GitHub Issue 页",
-                arguments: "https://www.github.com/EastMonster/auto-scunet/issues",
-                image_url: None,
-            }])
-            .show()
-            .unwrap();
+    impl Toast {
+        // every function do nothing
+        pub fn success(_name: String, _tip: String, _service: Service, _time: Option<f64>) {}
+        pub fn fail(_msg: String) {}
+        pub fn logged_in() {}
+        pub fn error(_msg: impl ToString) {}
     }
 }

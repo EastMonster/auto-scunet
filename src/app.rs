@@ -139,8 +139,13 @@ impl App for AutoScunetApp {
 fn set_font(cc: &Context) {
     let mut fonts = FontDefinitions::default();
 
+    #[cfg(target_os = "windows")]
+    let font_path = "C:/Windows/Fonts/msyh.ttc";
+    #[cfg(not(target_os = "windows"))]
+    let font_path = "/usr/share/fonts/noto-cjk/NotoSansCJK-Regular.ttc";
+
     // 可以，这很跨平台
-    let font_data = read("C:/Windows/Fonts/msyh.ttc").expect("无法读取字体文件");
+    let font_data = read(font_path).expect("无法读取字体文件");
 
     fonts
         .font_data

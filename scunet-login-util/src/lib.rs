@@ -1,6 +1,5 @@
 //! 四川大学校园网登录工具函数
 
-#[cfg(target_os = "windows")]
 mod types;
 mod wifi;
 
@@ -27,8 +26,7 @@ const BASE_URL: &str = "http://192.168.2.135";
 ///     .on_boot(false) // 可选项
 ///     .build();
 ///
-/// match util.login() {
-///     // ...
+/// match util.login() { // ...
 /// }
 /// ```
 #[derive(TypedBuilder)]
@@ -198,6 +196,3 @@ fn encrypt_password(password: &str, query_string: &str) -> Result<String> {
 
     Ok(encrypted_password)
 }
-
-#[cfg(not(target_os = "windows"))]
-compile_error!("本 crate 只在 Windows 下可用。");
