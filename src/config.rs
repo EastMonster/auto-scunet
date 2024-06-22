@@ -1,7 +1,7 @@
 use anyhow::Result;
 use auto_launch::AutoLaunchBuilder;
 use once_cell::sync::OnceCell;
-use serde_derive::{Deserialize, Serialize};
+use serde::{Deserialize, Serialize};
 
 use scunet_login_util::*;
 

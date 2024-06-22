@@ -1,4 +1,4 @@
-use serde_derive::{Deserialize, Serialize};
+use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
 /// 可供选择的服务商
