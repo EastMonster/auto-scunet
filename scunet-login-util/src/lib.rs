@@ -6,9 +6,8 @@ mod wifi;
 use std::{thread::sleep, time::Duration};
 
 use anyhow::Result;
-use reqwest::{header::CONTENT_TYPE, Url};
 use rsa::BigUint;
-use serde_json::{json, Value};
+use serde_json::Value;
 use typed_builder::TypedBuilder;
 
 pub use crate::types::*;
@@ -77,24 +76,20 @@ impl ScunetLoginUtil {
             Status::NotLoggedIn(qs) => qs,
         };
 
-        let client = reqwest::blocking::Client::new();
-
         let password = encrypt_password(&self.password, &query_string)?;
 
-        let login_form = json!({
-            "userId": self.student_id,
-            "password": password,
-            "service": self.service.to_param(),
-            "queryString": query_string,
-            "passwordEncrypt": true,
-        });
+        let login_form = [
+            ("userId", self.student_id.as_str()),
+            ("password", password.as_str()),
+            ("service", self.service.to_param()),
+            ("queryString", query_string.as_str()),
+            ("passwordEncrypt", "true"),
+        ];
 
-        let json: LoginResultJson = client
-            .post(format!("{}/eportal/InterFace.do?method=login", BASE_URL))
-            .header(CONTENT_TYPE, "application/x-www-form-urlencoded")
-            .form(&login_form)
-            .send()?
-            .json()?;
+        let json: LoginResultJson =
+            ureq::post("http://192.168.2.135/eportal/InterFace.do?method=login")
+                .send_form(&login_form)?
+                .into_json()?;
 
         match check_status(false, false)? {
             Status::LoggedIn(user_index) => Ok(LoginStatus::Success(get_user_info(&user_index)?)),
@@ -113,40 +108,33 @@ fn check_status(check_wifi: bool, on_boot: bool) -> Result<Status> {
     if on_boot {
         sleep(Duration::from_secs(2));
     }
-    let res = reqwest::blocking::get(BASE_URL)?;
+    let res = ureq::get(BASE_URL).call()?;
 
-    if res.status().is_server_error() {
+    if res.status() != 200 {
         return Err(LoginError::TimeOut.into());
     }
     // 登录成功会重定向到 /eportal/success.jsp?userIndex=...
     // 链接不带 userIndex 查询参数则说明未登录
-    match res.url().query() {
-        Some(q) => {
-            let user_index = q.split_once('=').unwrap().1;
-            Ok(Status::LoggedIn(user_index.to_string()))
-        }
-        None => {
-            let text = res.text()?;
-            // 截取 123.123.123.123 的返回内容，也就是 queryString
-            Ok(Status::NotLoggedIn(text[71..text.len() - 12].to_string()))
-        }
+    if res.get_url().contains('?') {
+        let user_index = res.get_url().split_once('=').unwrap().1;
+        Ok(Status::LoggedIn(user_index.to_string()))
+    } else {
+        let text = res.into_string().unwrap();
+        // 截取 123.123.123.123 的返回内容，也就是 queryString
+        Ok(Status::NotLoggedIn(text[71..text.len() - 12].to_string()))
     }
 }
 
 fn get_user_info(user_index: &str) -> Result<OnlineUserInfo> {
-    let client = reqwest::blocking::Client::new();
     let mut attempts = 0;
 
     loop {
-        let mut json: OnlineUserInfo = client
-            .post(format!(
-                "{}/eportal/InterFace.do?method=getOnlineUserInfo",
-                BASE_URL
-            ))
-            .header(CONTENT_TYPE, "application/x-www-form-urlencoded")
-            .form(&[("userIndex", user_index)])
-            .send()?
-            .json()?;
+        let mut json: OnlineUserInfo = ureq::post(&format!(
+            "{}/eportal/InterFace.do?method=getOnlineUserInfo",
+            BASE_URL
+        ))
+        .send_form(&[("userIndex", user_index)])?
+        .into_json()?;
 
         if json.result == "success" {
             let left_second_str =
@@ -178,16 +166,17 @@ fn get_user_info(user_index: &str) -> Result<OnlineUserInfo> {
 }
 
 fn encrypt_password(password: &str, query_string: &str) -> Result<String> {
-    let url = Url::parse(&format!("a:?{}", query_string))?;
-    let mac_address = url.query_pairs().find(|(k, _)| k == "mac").unwrap().1;
+    let begin = query_string.find("mac=").unwrap() + 4;
+    let end = query_string[begin..].find('&').unwrap();
 
-    let client = reqwest::blocking::Client::new();
+    let mac_address = &query_string[begin..begin + end];
 
-    let res: PageInfo = client
-        .post(format!("{}/eportal/InterFace.do?method=pageInfo", BASE_URL))
-        .form(&[("queryString", query_string)])
-        .send()?
-        .json()?;
+    let res: PageInfo = ureq::post(&format!(
+        "{}/eportal/InterFace.do?method=pageInfo",
+        BASE_URL
+    ))
+    .send_form(&[("queryString", query_string)])?
+    .into_json()?;
 
     let rsa_n = BigUint::parse_bytes(res.publicKeyModulus.as_bytes(), 16).unwrap();
     let rsa_e = BigUint::parse_bytes(res.publicKeyExponent.as_bytes(), 16).unwrap();
