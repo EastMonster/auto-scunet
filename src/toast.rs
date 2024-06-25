@@ -47,13 +47,13 @@ fn _success(title: &str, body: Vec<&str>) {
         .set_title(title)
         .set_messages(body)
         .show()
-        .unwrap();
+        .ok();
     #[cfg(not(target_os = "windows"))]
     Notification::new()
         .summary(title)
         .body(&body.join("\n"))
         .show()
-        .unwrap();
+        .ok();
 }
 
 fn _fail(msg: impl ToString) {
@@ -62,7 +62,7 @@ fn _fail(msg: impl ToString) {
         .set_title("登录失败")
         .set_messages(vec![&msg.to_string(), "请手动调整配置或检查网络状态"])
         .show()
-        .unwrap();
+        .ok();
     #[cfg(not(target_os = "windows"))]
     Notification::new()
         .summary("登录失败")
@@ -71,7 +71,7 @@ fn _fail(msg: impl ToString) {
             msg.to_string()
         ))
         .show()
-        .unwrap();
+        .ok();
 }
 
 fn _logged_in() {
@@ -80,13 +80,13 @@ fn _logged_in() {
         .set_title("你已登录到 SCUNET")
         .set_messages(vec!["你可以再次\"登录\"来更新配置"])
         .show()
-        .unwrap();
+        .ok();
     #[cfg(not(target_os = "windows"))]
     Notification::new()
         .summary("你已登录到 SCUNET")
         .body("你可以再次\"登录\"来更新配置")
         .show()
-        .unwrap();
+        .ok();
 }
 
 fn _error(msg: impl ToString) {
@@ -101,11 +101,11 @@ fn _error(msg: impl ToString) {
             image_url: None,
         }])
         .show()
-        .unwrap();
+        .ok();
     #[cfg(not(target_os = "windows"))]
     Notification::new()
         .summary("😭😭😭 程序出错了")
         .body(&format!("{}\n可以考虑提一个 Issue", msg.to_string()))
         .show()
-        .unwrap();
+        .ok();
 }
