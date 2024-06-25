@@ -130,22 +130,24 @@ fn set_font(cc: &Context) {
     let mut fonts = FontDefinitions::default();
 
     #[cfg(target_os = "windows")]
-    let font_path = "C:/Windows/Fonts/msyh.ttc";
+    let font_paths = ["C:/Windows/Fonts/msyh.ttc"];
     #[cfg(not(target_os = "windows"))]
-    let font_path = "/usr/share/fonts/noto-cjk/NotoSansCJK-Regular.ttc";
+    let font_paths = [
+        "/usr/share/fonts/noto-cjk/NotoSansCJK-Regular.ttc", // Ubuntu 22.04: apt install fonts-noto-cjk
+        "/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc", // Arch Linux: pacman -S noto-fonts-cjk
+    ];
 
-    // 可以，这很跨平台
-    let font_data = read(font_path).expect("无法读取字体文件");
+    let font_data = font_paths.iter().find_map(|path| read(path).ok()).unwrap();
 
     fonts
         .font_data
-        .insert("MSYH".to_owned(), FontData::from_owned(font_data));
+        .insert("Custom".to_owned(), FontData::from_owned(font_data));
 
     fonts
         .families
         .entry(FontFamily::Proportional)
         .or_default()
-        .insert(0, "MSYH".to_owned());
+        .insert(0, "Custom".to_owned());
 
     cc.set_fonts(fonts);
     cc.set_pixels_per_point(1.25);
