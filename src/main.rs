@@ -7,17 +7,12 @@ mod toast;
 
 use std::process::exit;
 
-use tokio::runtime::Runtime;
-
 use app::AutoScunetApp;
 use config::{load_config, AppConfig, ON_BOOT, VERSION};
 use scunet_login_util::*;
 use toast::*;
 
 fn main() -> Result<(), eframe::Error> {
-    let rt = Runtime::new().unwrap();
-    let _guard = rt.enter();
-
     let options = eframe::NativeOptions {
         viewport: egui::ViewportBuilder::default()
             .with_inner_size([302.0, 180.0]) // I'm not good at this

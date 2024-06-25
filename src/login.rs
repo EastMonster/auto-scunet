@@ -1,4 +1,4 @@
-use std::sync::mpsc::Sender;
+use std::{sync::mpsc::Sender, thread};
 
 use scunet_login_util::*;
 
@@ -11,17 +11,14 @@ pub fn login(
     tx: Sender<AppLoginResult>,
     ctx: egui::Context,
 ) {
-    tokio::spawn(async move {
+    thread::spawn(move || {
         let login_util = ScunetLoginUtil::builder()
             .student_id(stu_id)
             .password(password)
             .service(service)
             .build();
 
-        match tokio::task::spawn_blocking(move || login_util.login())
-            .await
-            .unwrap()
-        {
+        match login_util.login() {
             Ok(LoginStatus::Success(user_info)) => {
                 tx.send(AppLoginResult::LoginSuccess(user_info)).unwrap()
             }
