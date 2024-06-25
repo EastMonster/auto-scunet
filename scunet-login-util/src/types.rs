@@ -82,10 +82,17 @@ pub(crate) struct PageInfo {
 #[allow(non_snake_case)]
 #[derive(Debug, Deserialize)]
 pub struct OnlineUserInfo {
+    /// 登录结果
     pub(crate) result: String,
+    /// 用户姓名
     pub userName: String,
+    /// 欢迎语
     pub welcomeTip: String,
     pub(crate) ballInfo: Option<String>, // 谁把这个写成返回字符串的
+    /// 剩余时长，仅无套餐校园网
     #[serde(skip_deserializing)]
     pub left_hour: Option<f64>,
+    /// 加密后的密码字符串
+    #[serde(skip_deserializing)]
+    pub encrypted_password: String,
 }

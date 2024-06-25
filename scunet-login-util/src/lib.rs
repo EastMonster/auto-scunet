@@ -60,7 +60,7 @@ impl ScunetLoginUtil {
 
     /// 执行登录操作
     ///
-    /// 登陆成功时会返回 [`LoginStatus::Success`]，并附带用户信息
+    /// 登录成功时会返回 [`LoginStatus::Success`]，并附带用户信息 [`OnlineUserInfo`]
     ///
     /// ## 使用例
     /// ```
@@ -76,7 +76,12 @@ impl ScunetLoginUtil {
             Status::NotLoggedIn(qs) => qs,
         };
 
-        let password = encrypt_password(&self.password, &query_string)?;
+        // 加密后的密码长度以后应该不会变的吧...
+        let password = if self.password.len() == 256 {
+            self.password.clone()
+        } else {
+            encrypt_password(&self.password, &query_string)?
+        };
 
         let login_form = [
             ("userId", self.student_id.as_str()),
@@ -92,7 +97,9 @@ impl ScunetLoginUtil {
                 .into_json()?;
 
         match check_status(false, false)? {
-            Status::LoggedIn(user_index) => Ok(LoginStatus::Success(get_user_info(&user_index)?)),
+            Status::LoggedIn(user_index) => {
+                Ok(LoginStatus::Success(get_user_info(&user_index, password)?))
+            }
             _ => Err(LoginError::Fail(json.message).into()),
         }
     }
@@ -125,7 +132,7 @@ fn check_status(check_wifi: bool, on_boot: bool) -> Result<Status> {
     }
 }
 
-fn get_user_info(user_index: &str) -> Result<OnlineUserInfo> {
+fn get_user_info(user_index: &str, password: String) -> Result<OnlineUserInfo> {
     let mut attempts = 0;
 
     loop {
@@ -151,6 +158,7 @@ fn get_user_info(user_index: &str) -> Result<OnlineUserInfo> {
             };
 
             json.left_hour = left_hour;
+            json.encrypted_password = password;
             json.ballInfo.take(); // 不想再多看一眼
 
             return Ok(json);

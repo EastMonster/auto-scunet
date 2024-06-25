@@ -53,6 +53,7 @@ impl App for AutoScunetApp {
                 }
                 AppLoginResult::LoginSuccess(user_info) => {
                     self.status = "登录成功, 配置已更新".to_string();
+                    self.config.password = user_info.encrypted_password;
                     save_config(&self.config).unwrap_or_else(Toast::error);
                     {
                         Toast::success(
@@ -92,25 +93,14 @@ impl App for AutoScunetApp {
                     .ui(ui);
             });
             ui.horizontal(|ui| {
+                use Service::*;
                 ComboBox::from_label("")
                     .selected_text(self.config.service.to_str())
                     .show_ui(ui, |ui| {
-                        ui.selectable_value(&mut self.config.service, Service::Internet, "校园网");
-                        ui.selectable_value(
-                            &mut self.config.service,
-                            Service::ChinaMobile,
-                            "中国移动",
-                        );
-                        ui.selectable_value(
-                            &mut self.config.service,
-                            Service::ChinaTelecom,
-                            "中国电信",
-                        );
-                        ui.selectable_value(
-                            &mut self.config.service,
-                            Service::ChinaUnicom,
-                            "中国联通",
-                        );
+                        ui.selectable_value(&mut self.config.service, Internet, "校园网");
+                        ui.selectable_value(&mut self.config.service, ChinaMobile, "中国移动");
+                        ui.selectable_value(&mut self.config.service, ChinaTelecom, "中国电信");
+                        ui.selectable_value(&mut self.config.service, ChinaUnicom, "中国联通");
                     });
                 if ui.checkbox(&mut self.config.on_boot, "开机启动").changed() {
                     on_boot_change(self.config.on_boot)
