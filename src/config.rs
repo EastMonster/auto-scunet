@@ -5,6 +5,8 @@ use serde::{Deserialize, Serialize};
 
 use scunet_login_util::*;
 
+use crate::Toast;
+
 pub const VERSION: &str = env!("CARGO_PKG_VERSION");
 
 pub const GITHUB_REPO: &str = "https://github.com/EastMonster/auto-scunet";
@@ -33,16 +35,12 @@ pub fn on_boot_change(val: bool) {
         .build()
         .unwrap();
 
-    if val {
-        auto.enable().unwrap();
-    } else {
-        auto.disable().unwrap();
-    }
+    if val { auto.enable() } else { auto.disable() }.unwrap_or_else(Toast::error);
 }
 
 pub fn load_config() -> Result<AppConfig> {
     let args: Vec<String> = std::env::args().collect();
-    ON_BOOT.set(args.contains(&String::from("--boot"))).unwrap(); // 唯一一处 set, unwrap is safe
+    ON_BOOT.set(args.contains(&String::from("--boot"))).unwrap();
 
     let pwd = std::env::current_exe()?.parent().unwrap().to_owned();
     APP_PWD.set(pwd.to_str().unwrap().to_owned()).unwrap();

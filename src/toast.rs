@@ -43,11 +43,7 @@ fn new_toast() -> WinToastNotify {
 
 fn _success(title: &str, body: Vec<&str>) {
     #[cfg(target_os = "windows")]
-    new_toast()
-        .set_title(title)
-        .set_messages(body)
-        .show()
-        .ok();
+    new_toast().set_title(title).set_messages(body).show().ok();
     #[cfg(not(target_os = "windows"))]
     Notification::new()
         .summary(title)

@@ -59,6 +59,6 @@ fn pre_login(config: &mut AppConfig) {
                 exit(0);
             }
         }
-        Err(e) => Toast::fail(e.to_string()),
+        Err(e) => Toast::fail(e),
     }
 }

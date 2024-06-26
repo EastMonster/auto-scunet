@@ -60,7 +60,7 @@ pub enum LoginError {
     #[error("连接超时")]
     TimeOut,
     #[error("错误 {1}: {0}")]
-    WiFiStatusError(String, u32),
+    WiFiStatusError(&'static str, u32),
     #[error("未连接到 SCUNET")]
     NotConnectedToScunet,
 }
@@ -88,6 +88,7 @@ pub struct OnlineUserInfo {
     pub userName: String,
     /// 欢迎语
     pub welcomeTip: String,
+    /// 详细信息
     pub(crate) ballInfo: Option<String>, // 谁把这个写成返回字符串的
     /// 剩余时长，仅无套餐校园网
     #[serde(skip_deserializing)]

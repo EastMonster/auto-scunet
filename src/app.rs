@@ -52,18 +52,15 @@ impl App for AutoScunetApp {
                     save_config(&self.config).unwrap_or_else(Toast::error);
                 }
                 AppLoginResult::LoginSuccess(user_info) => {
-                    self.status = "登录成功, 配置已更新".to_string();
                     self.config.password = user_info.encrypted_password;
                     save_config(&self.config).unwrap_or_else(Toast::error);
-                    {
-                        Toast::success(
-                            user_info.userName,
-                            user_info.welcomeTip,
-                            self.config.service,
-                            user_info.left_hour,
-                        );
-                        exit(0);
-                    }
+                    Toast::success(
+                        user_info.userName,
+                        user_info.welcomeTip,
+                        self.config.service,
+                        user_info.left_hour,
+                    );
+                    exit(0);
                 }
                 AppLoginResult::LoginFail(msg) => self.status = msg,
             }
@@ -79,7 +76,7 @@ impl App for AutoScunetApp {
                     .on_hover_text("查看 GitHub 仓库")
                     .clicked()
                 {
-                    webbrowser::open(GITHUB_REPO).unwrap();
+                    webbrowser::open(GITHUB_REPO).unwrap_or_else(Toast::error);
                 }
             });
             ui.horizontal(|ui| {
@@ -133,8 +130,8 @@ fn set_font(cc: &Context) {
     let font_paths = ["C:/Windows/Fonts/msyh.ttc"];
     #[cfg(not(target_os = "windows"))]
     let font_paths = [
-        "/usr/share/fonts/noto-cjk/NotoSansCJK-Regular.ttc", // Ubuntu 22.04: apt install fonts-noto-cjk
-        "/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc", // Arch Linux: pacman -S noto-fonts-cjk
+        "/usr/share/fonts/noto-cjk/NotoSansCJK-Regular.ttc", // Arch Linux: pacman -S noto-fonts-cjk
+        "/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc", // Ubuntu 22.04: apt install fonts-noto-cjk
     ];
 
     let font_data = font_paths.iter().find_map(|path| read(path).ok()).unwrap();
