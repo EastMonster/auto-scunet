@@ -70,6 +70,11 @@ pub(crate) struct LoginResultJson {
     pub(crate) message: String,
 }
 
+#[derive(Debug, Deserialize)]
+pub(crate) struct BallInfoJson {
+    pub(crate) value: Option<String>,
+}
+
 /// 页面信息，包含公钥模数和公钥指数
 #[allow(non_snake_case)]
 #[derive(Debug, Deserialize)]

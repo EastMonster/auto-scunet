@@ -7,7 +7,6 @@ use std::{thread::sleep, time::Duration};
 
 use anyhow::Result;
 use rsa::BigUint;
-use serde_json::Value;
 use typed_builder::TypedBuilder;
 
 pub use crate::types::*;
@@ -145,16 +144,15 @@ fn get_user_info(user_index: &str, password: String) -> Result<OnlineUserInfo> {
 
         if json.result == "success" {
             let left_second_str =
-                &serde_json::from_str::<Value>(json.ballInfo.as_ref().unwrap())?[1]["value"];
+                &serde_json::from_str::<Vec<BallInfoJson>>(json.ballInfo.as_ref().unwrap())?[1]
+                    .value;
 
-            let left_hour = if left_second_str.is_null() {
-                None
-            } else {
-                let left_second = left_second_str.as_str().unwrap().parse::<i32>();
-                match left_second {
-                    Ok(v) => Some((v as f64 / 3600.0 * 10.0).round() / 10.0),
+            let left_hour = match left_second_str {
+                Some(left_second) => match left_second.parse::<f64>() {
+                    Ok(v) => Some((v / 3600.0 * 10.0).round() / 10.0),
                     Err(_) => None,
-                }
+                },
+                None => None,
             };
 
             json.left_hour = left_hour;
