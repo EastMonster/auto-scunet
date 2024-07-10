@@ -29,7 +29,7 @@ fn main() -> Result<(), eframe::Error> {
     eframe::run_native(
         &format!("AutoSCUNET v{}", VERSION),
         options,
-        Box::new(|cc| Box::new(AutoScunetApp::new(cc, config))),
+        Box::new(|cc| Ok(Box::new(AutoScunetApp::new(cc, config)))),
     )
 }
 

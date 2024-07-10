@@ -15,7 +15,7 @@ thiserror = "1.0"
 typed-builder = "0.18"
 
 [target.'cfg(windows)'.dependencies]
-windows = { version = "0.57", features = [
+windows = { version = "0.58", features = [
     "Win32_Foundation",
     "Win32_NetworkManagement_WiFi",
 ] }
