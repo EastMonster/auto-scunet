@@ -45,6 +45,7 @@ pub(crate) enum Status {
 }
 
 /// 登录成功的状态
+#[derive(Clone, Debug)]
 pub enum LoginStatus {
     /// 登录成功，附带 [OnlineUserInfo]
     Success(OnlineUserInfo),
@@ -67,25 +68,25 @@ pub enum LoginError {
 
 #[derive(Debug, Deserialize)]
 pub(crate) struct LoginResultJson {
-    pub(crate) message: String,
+    pub message: String,
 }
 
 #[derive(Debug, Deserialize)]
 pub(crate) struct BallInfoJson {
-    pub(crate) value: Option<String>,
+    pub value: Option<String>,
 }
 
 /// 页面信息，包含公钥模数和公钥指数
 #[allow(non_snake_case)]
 #[derive(Debug, Deserialize)]
 pub(crate) struct PageInfo {
-    pub(crate) publicKeyModulus: String,
-    pub(crate) publicKeyExponent: String,
+    pub publicKeyModulus: String,
+    pub publicKeyExponent: String,
 }
 
 /// 在线用户信息，包含用户姓名，欢迎语和剩余时长（仅无套餐校园网）
 #[allow(non_snake_case)]
-#[derive(Debug, Deserialize)]
+#[derive(Clone, Debug, Deserialize)]
 pub struct OnlineUserInfo {
     /// 登录结果
     pub(crate) result: String,

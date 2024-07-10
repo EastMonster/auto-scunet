@@ -11,7 +11,7 @@ pub fn check_wifi(on_boot: bool) -> Result<(), LoginError> {
 }
 
 #[cfg(target_os = "windows")]
-pub(crate) mod windows {
+mod windows {
     use std::{ffi::c_void, thread::sleep, time::Duration};
 
     use windows::{
@@ -29,7 +29,7 @@ pub(crate) mod windows {
     use crate::LoginError;
 
     // ref: https://www.reddit.com/r/rust/comments/zhv63t/comment/izpp30r
-    pub(crate) fn check_wifi(on_boot: bool) -> Result<(), LoginError> {
+    pub fn check_wifi(on_boot: bool) -> Result<(), LoginError> {
         unsafe {
             let max_attempt = if on_boot { 5 } else { 1 };
             let mut attempts = 0;
@@ -119,7 +119,7 @@ pub(crate) mod windows {
 mod _others {
     use crate::LoginError;
 
-    pub(crate) fn check_wifi(_on_boot: bool) -> Result<(), LoginError> {
+    pub fn check_wifi(_on_boot: bool) -> Result<(), LoginError> {
         Ok(())
     }
 }

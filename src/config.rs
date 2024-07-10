@@ -13,8 +13,6 @@ pub const GITHUB_REPO: &str = "https://github.com/EastMonster/auto-scunet";
 
 const CONFIG_FILE_NAME: &str = "auto-scunet.toml";
 
-static APP_PWD: OnceCell<String> = OnceCell::new();
-
 static CONFIG_FILE: OnceCell<String> = OnceCell::new();
 
 pub static ON_BOOT: OnceCell<bool> = OnceCell::new();
@@ -48,7 +46,6 @@ pub fn load_config() -> Result<AppConfig> {
     ON_BOOT.set(args.contains(&String::from("--boot"))).unwrap();
 
     let pwd = std::env::current_exe()?.parent().unwrap().to_owned();
-    APP_PWD.set(pwd.to_str().unwrap().to_owned()).unwrap();
 
     // 如此一来，配置文件位置就固定下来了
     CONFIG_FILE

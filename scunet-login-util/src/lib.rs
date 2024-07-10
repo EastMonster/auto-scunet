@@ -1,4 +1,4 @@
-//! 四川大学校园网登录工具函数
+//! 四川大学校园网登录工具库
 
 mod types;
 mod wifi;
@@ -12,6 +12,13 @@ use typed_builder::TypedBuilder;
 pub use crate::types::*;
 
 const BASE_URL: &str = "http://192.168.2.135";
+
+const LOGIN_URL: &str = "http://192.168.2.135/eportal/InterFace.do?method=login";
+
+const ONLINE_USER_INFO_URL: &str =
+    "http://192.168.2.135/eportal/InterFace.do?method=getOnlineUserInfo";
+
+const PAGE_INFO_URL: &str = "http://192.168.2.135/eportal/InterFace.do?method=pageInfo";
 
 /// 用于登录四川大学校园网的工具结构体
 ///
@@ -90,10 +97,7 @@ impl ScunetLoginUtil {
             ("passwordEncrypt", "true"),
         ];
 
-        let json: LoginResultJson =
-            ureq::post("http://192.168.2.135/eportal/InterFace.do?method=login")
-                .send_form(&login_form)?
-                .into_json()?;
+        let json: LoginResultJson = ureq::post(LOGIN_URL).send_form(&login_form)?.into_json()?;
 
         match check_status(false, false)? {
             Status::LoggedIn(user_index) => {
@@ -135,12 +139,9 @@ fn get_user_info(user_index: &str, password: String) -> Result<OnlineUserInfo> {
     let mut attempts = 0;
 
     loop {
-        let mut json: OnlineUserInfo = ureq::post(&format!(
-            "{}/eportal/InterFace.do?method=getOnlineUserInfo",
-            BASE_URL
-        ))
-        .send_form(&[("userIndex", user_index)])?
-        .into_json()?;
+        let mut json: OnlineUserInfo = ureq::post(ONLINE_USER_INFO_URL)
+            .send_form(&[("userIndex", user_index)])?
+            .into_json()?;
 
         if json.result == "success" {
             let left_second_str =
@@ -177,12 +178,9 @@ fn encrypt_password(password: &str, query_string: &str) -> Result<String> {
 
     let mac_address = &query_string[begin..begin + end];
 
-    let res: PageInfo = ureq::post(&format!(
-        "{}/eportal/InterFace.do?method=pageInfo",
-        BASE_URL
-    ))
-    .send_form(&[("queryString", query_string)])?
-    .into_json()?;
+    let res: PageInfo = ureq::post(PAGE_INFO_URL)
+        .send_form(&[("queryString", query_string)])?
+        .into_json()?;
 
     let rsa_n = BigUint::parse_bytes(res.publicKeyModulus.as_bytes(), 16).unwrap();
     let rsa_e = BigUint::parse_bytes(res.publicKeyExponent.as_bytes(), 16).unwrap();
