@@ -19,6 +19,7 @@ fn main() -> Result<(), eframe::Error> {
             .with_resizable(false)
             .with_maximize_button(false)
             .with_minimize_button(false),
+        centered: true,
         ..Default::default()
     };
 
