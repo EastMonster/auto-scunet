@@ -48,8 +48,8 @@ fn pre_login(config: &mut AppConfig) {
             Toast::success(
                 user_info.userName,
                 user_info.welcomeTip,
-                config.service,
                 user_info.left_hour,
+                config
             );
             save_config(config).unwrap_or_else(Toast::error);
             exit(0);

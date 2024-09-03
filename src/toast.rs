@@ -1,10 +1,10 @@
-use scunet_login_util::Service;
+use crate::AppConfig;
 
 pub struct Toast;
 
 impl Toast {
-    pub fn success(name: String, tip: String, service: Service, time: Option<f64>) {
-        let main_msg = format!("你已登录到 SCUNET ({})", service.to_str());
+    pub fn success(name: String, tip: String, time: Option<f64>, config: &AppConfig) {
+        let main_msg = format!("你已登录到 SCUNET ({})", config.service.to_str());
         let mut messages = vec![main_msg];
 
         if let Some(t) = time {
@@ -13,6 +13,12 @@ impl Toast {
         }
 
         let messages = messages.iter().map(|s| s.as_str()).collect::<Vec<&str>>();
+
+        let name = if config.greeting_name.is_empty() {
+            name
+        } else {
+            config.greeting_name.clone()
+        };
 
         _success(&format!("{}, {}", name, tip), messages);
     }

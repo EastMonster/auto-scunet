@@ -23,6 +23,8 @@ pub struct AutoScunetApp {
     tx: Sender<AppLoginResult>,
     rx: Receiver<AppLoginResult>,
 
+    show_setting_modal: bool,
+
     config: AppConfig,
     logining: bool,
     status: String,
@@ -36,6 +38,7 @@ impl AutoScunetApp {
         Self {
             tx,
             rx,
+            show_setting_modal: false,
             config,
             logining: false,
             status: Default::default(),
@@ -57,8 +60,8 @@ impl App for AutoScunetApp {
                     Toast::success(
                         user_info.userName,
                         user_info.welcomeTip,
-                        self.config.service,
                         user_info.left_hour,
+                        &self.config,
                     );
                     exit(0);
                 }
@@ -77,6 +80,9 @@ impl App for AutoScunetApp {
                         .clicked()
                     {
                         webbrowser::open(GITHUB_REPO).unwrap_or_else(Toast::error);
+                    }
+                    if ui.button("设置").clicked() {
+                        self.show_setting_modal = true;
                     }
                 })
             });
@@ -123,6 +129,27 @@ impl App for AutoScunetApp {
             ui.add_space(8.0);
             ui.vertical_centered_justified(|ui| ui.label(&self.status));
         });
+
+        let was_settings_open = self.show_setting_modal;
+
+        Window::new("设置")
+            .open(&mut self.show_setting_modal)
+            .max_width(200.0)
+            .collapsible(false)
+            .resizable(false)
+            .show(ctx, |ui| {
+                ui.horizontal(|ui| {
+                    ui.label("问候称呼");
+                    ui.text_edit_singleline(&mut self.config.greeting_name)
+                        .on_hover_text("留空则使用真实姓名")
+                });
+            });
+
+        if was_settings_open && !self.show_setting_modal {
+            self.config.greeting_name = self.config.greeting_name.trim().into();
+            save_config(&self.config).unwrap_or_else(Toast::error);
+            self.status = "配置已更新".into();
+        }
     }
 }
 
