@@ -15,7 +15,7 @@ use toast::*;
 fn main() -> Result<(), eframe::Error> {
     let options = eframe::NativeOptions {
         viewport: egui::ViewportBuilder::default()
-            .with_inner_size([302.0, 180.0]) // I'm not good at this
+            .with_inner_size([320.0, 180.0])
             .with_resizable(false)
             .with_maximize_button(false)
             .with_minimize_button(false),

@@ -70,14 +70,15 @@ impl App for AutoScunetApp {
         CentralPanel::default().show(ctx, |ui| {
             ui.horizontal(|ui| {
                 ui.heading("登录到 SCUNET");
-                ui.add_space(65.0);
-                if ui
-                    .button(format!(" {} ", egui::special_emojis::GITHUB))
-                    .on_hover_text("查看 GitHub 仓库")
-                    .clicked()
-                {
-                    webbrowser::open(GITHUB_REPO).unwrap_or_else(Toast::error);
-                }
+                ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
+                    if ui
+                        .button(format!(" {} ", special_emojis::GITHUB))
+                        .on_hover_text("查看 GitHub 仓库")
+                        .clicked()
+                    {
+                        webbrowser::open(GITHUB_REPO).unwrap_or_else(Toast::error);
+                    }
+                })
             });
             ui.horizontal(|ui| {
                 ui.label("学号:");
@@ -102,20 +103,22 @@ impl App for AutoScunetApp {
                 if ui.checkbox(&mut self.config.on_boot, "开机启动").changed() {
                     on_boot_change(self.config.on_boot)
                 }
-                if ui
-                    .add_enabled(!self.logining, Button::new("登录"))
-                    .clicked()
-                {
-                    self.status = "正在登录...".to_string();
-                    self.logining = true;
-                    login(
-                        self.config.student_id.clone(),
-                        self.config.password.clone(),
-                        self.config.service,
-                        self.tx.clone(),
-                        ctx.clone(),
-                    );
-                }
+                ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
+                    if ui
+                        .add_enabled(!self.logining, Button::new("登录"))
+                        .clicked()
+                    {
+                        self.status = "正在登录...".to_string();
+                        self.logining = true;
+                        login(
+                            self.config.student_id.clone(),
+                            self.config.password.clone(),
+                            self.config.service,
+                            self.tx.clone(),
+                            ctx.clone(),
+                        );
+                    }
+                });
             });
             ui.add_space(8.0);
             ui.vertical_centered_justified(|ui| ui.label(&self.status));
