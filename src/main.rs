@@ -2,7 +2,6 @@
 
 mod app;
 mod config;
-mod login;
 mod toast;
 
 use std::process::exit;
@@ -49,7 +48,7 @@ fn pre_login(config: &mut AppConfig) {
                 user_info.userName,
                 user_info.welcomeTip,
                 user_info.left_hour,
-                config
+                config,
             );
             save_config(config).unwrap_or_else(Toast::error);
             exit(0);

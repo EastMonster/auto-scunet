@@ -1,33 +1,25 @@
+use anyhow::Result;
 use eframe::*;
 use egui::*;
 use std::{
     fs::read,
     process::exit,
     sync::mpsc::{Receiver, Sender},
+    thread,
 };
 
-use crate::{config::*, login::*, Toast};
+use crate::{config::*, Toast};
 
 use scunet_login_util::*;
 
-pub enum AppLoginResult {
-    /// 已登录
-    LoggedIn,
-    /// 登录成功，返回结果信息
-    LoginSuccess(OnlineUserInfo),
-    /// 登录失败，返回原因
-    LoginFail(String),
-}
-
 pub struct AutoScunetApp {
-    tx: Sender<AppLoginResult>,
-    rx: Receiver<AppLoginResult>,
-
-    show_setting_modal: bool,
+    tx: Sender<Result<LoginStatus>>,
+    rx: Receiver<Result<LoginStatus>>,
 
     config: AppConfig,
     logining: bool,
     status: String,
+    show_setting_modal: bool,
 }
 
 impl AutoScunetApp {
@@ -44,17 +36,33 @@ impl AutoScunetApp {
             status: Default::default(),
         }
     }
-}
 
-impl App for AutoScunetApp {
-    fn update(&mut self, ctx: &Context, _frame: &mut eframe::Frame) {
+    pub fn login(&self, ctx: Context) {
+        let tx = self.tx.clone();
+        let student_id = self.config.student_id.clone();
+        let password = self.config.password.clone();
+        let service = self.config.service;
+
+        thread::spawn(move || {
+            let login_util = ScunetLoginUtil::builder()
+                .student_id(student_id)
+                .password(password)
+                .service(service)
+                .build();
+
+            tx.send(login_util.login()).unwrap();
+            ctx.request_repaint();
+        });
+    }
+
+    pub fn handle_login_result(&mut self) {
         if let Ok(response) = self.rx.try_recv() {
             match response {
-                AppLoginResult::LoggedIn => {
+                Ok(LoginStatus::HaveLoggedIn) => {
                     self.status = "配置已更新".to_string();
                     save_config(&self.config).unwrap_or_else(Toast::error);
                 }
-                AppLoginResult::LoginSuccess(user_info) => {
+                Ok(LoginStatus::Success(user_info)) => {
                     self.config.password = user_info.encrypted_password;
                     save_config(&self.config).unwrap_or_else(Toast::error);
                     Toast::success(
@@ -65,10 +73,16 @@ impl App for AutoScunetApp {
                     );
                     exit(0);
                 }
-                AppLoginResult::LoginFail(msg) => self.status = msg,
+                Err(err) => self.status = err.to_string(),
             }
             self.logining = false;
         }
+    }
+}
+
+impl App for AutoScunetApp {
+    fn update(&mut self, ctx: &Context, _frame: &mut eframe::Frame) {
+        self.handle_login_result();
 
         CentralPanel::default().show(ctx, |ui| {
             ui.horizontal(|ui| {
@@ -116,13 +130,7 @@ impl App for AutoScunetApp {
                     {
                         self.status = "正在登录...".to_string();
                         self.logining = true;
-                        login(
-                            self.config.student_id.clone(),
-                            self.config.password.clone(),
-                            self.config.service,
-                            self.tx.clone(),
-                            ctx.clone(),
-                        );
+                        self.login(ctx.clone());
                     }
                 });
             });
