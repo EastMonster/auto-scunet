@@ -12,6 +12,8 @@ use scunet_login_util::*;
 use toast::*;
 
 fn main() -> Result<(), eframe::Error> {
+    set_panic_hook();
+
     let options = eframe::NativeOptions {
         viewport: egui::ViewportBuilder::default()
             .with_inner_size([320.0, 180.0])
@@ -50,7 +52,7 @@ fn pre_login(config: &mut AppConfig) {
                 user_info.left_hour,
                 config,
             );
-            save_config(config).unwrap_or_else(Toast::error);
+            save_config(config).unwrap();
             exit(0);
         }
         Ok(LoginStatus::HaveLoggedIn) => {
@@ -61,4 +63,18 @@ fn pre_login(config: &mut AppConfig) {
         }
         Err(e) => Toast::fail(e),
     }
+}
+
+fn set_panic_hook() {
+    std::panic::set_hook(Box::new(|info| {
+        let msg = if let Some(s) = info.payload().downcast_ref::<&str>() {
+            s.to_string()
+        } else if let Some(s) = info.payload().downcast_ref::<String>() {
+            s.clone()
+        } else {
+            "未知错误".to_string()
+        };
+
+        Toast::error(msg);
+    }));
 }

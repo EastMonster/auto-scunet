@@ -5,8 +5,6 @@ use serde::{Deserialize, Serialize};
 
 use scunet_login_util::*;
 
-use crate::Toast;
-
 pub const VERSION: &str = env!("CARGO_PKG_VERSION");
 
 pub const GITHUB_REPO: &str = "https://github.com/EastMonster/auto-scunet";
@@ -39,7 +37,7 @@ pub struct AppConfig {
 pub fn on_boot_change(val: bool) {
     let auto = &AUTO_LAUNCH_CONF;
 
-    if val { auto.enable() } else { auto.disable() }.unwrap_or_else(Toast::error);
+    if val { auto.enable() } else { auto.disable() }.unwrap();
 }
 
 pub fn load_config() -> Result<AppConfig> {

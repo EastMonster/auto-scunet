@@ -60,11 +60,11 @@ impl AutoScunetApp {
             match response {
                 Ok(LoginStatus::HaveLoggedIn) => {
                     self.status = "配置已更新".to_string();
-                    save_config(&self.config).unwrap_or_else(Toast::error);
+                    save_config(&self.config).unwrap();
                 }
                 Ok(LoginStatus::Success(user_info)) => {
                     self.config.password = user_info.encrypted_password;
-                    save_config(&self.config).unwrap_or_else(Toast::error);
+                    save_config(&self.config).unwrap();
                     Toast::success(
                         user_info.userName,
                         user_info.welcomeTip,
@@ -93,7 +93,7 @@ impl App for AutoScunetApp {
                         .on_hover_text("查看 GitHub 仓库")
                         .clicked()
                     {
-                        webbrowser::open(GITHUB_REPO).unwrap_or_else(Toast::error);
+                        webbrowser::open(GITHUB_REPO).unwrap();
                     }
                     if ui.button("设置").clicked() {
                         self.show_setting_modal = true;
@@ -155,7 +155,7 @@ impl App for AutoScunetApp {
 
         if was_settings_open && !self.show_setting_modal {
             self.config.greeting_name = self.config.greeting_name.trim().into();
-            save_config(&self.config).unwrap_or_else(Toast::error);
+            save_config(&self.config).unwrap();
             self.status = "配置已更新".into();
         }
     }
