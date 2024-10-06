@@ -12,6 +12,11 @@ use crate::{config::*, Toast};
 
 use scunet_login_util::*;
 
+pub struct AutoScunetAppParam {
+    pub config: AppConfig,
+    pub logged_in: bool,
+}
+
 pub struct AutoScunetApp {
     tx: Sender<Result<LoginStatus>>,
     rx: Receiver<Result<LoginStatus>>,
@@ -23,17 +28,23 @@ pub struct AutoScunetApp {
 }
 
 impl AutoScunetApp {
-    pub fn new(cc: &CreationContext<'_>, config: AppConfig) -> Self {
+    pub fn new(cc: &CreationContext<'_>, param: AutoScunetAppParam) -> Self {
         set_font(&cc.egui_ctx);
         let (tx, rx) = std::sync::mpsc::channel();
 
+        let status = if param.logged_in {
+            "你目前已登录到 SCUNET!".to_string()
+        } else {
+            Default::default()
+        };
+        
         Self {
             tx,
             rx,
-            show_setting_modal: false,
-            config,
+            config: param.config,
             logining: false,
-            status: Default::default(),
+            status,
+            show_setting_modal: false,
         }
     }
 

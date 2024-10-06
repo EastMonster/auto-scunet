@@ -6,7 +6,7 @@ mod toast;
 
 use std::process::exit;
 
-use app::AutoScunetApp;
+use app::{AutoScunetApp, AutoScunetAppParam};
 use config::*;
 use scunet_login_util::*;
 use toast::*;
@@ -24,18 +24,23 @@ fn main() -> Result<(), eframe::Error> {
         ..Default::default()
     };
 
-    let mut config = load_config().unwrap_or_default();
+    let mut param = AutoScunetAppParam {
+        config: load_config().unwrap_or_default(),
+        logged_in: false,
+    };
 
-    pre_login(&mut config);
+    pre_login(&mut param);
 
     eframe::run_native(
         &format!("AutoSCUNET v{}", VERSION),
         options,
-        Box::new(|cc| Ok(Box::new(AutoScunetApp::new(cc, config)))),
+        Box::new(|cc| Ok(Box::new(AutoScunetApp::new(cc, param)))),
     )
 }
 
-fn pre_login(config: &mut AppConfig) {
+fn pre_login(param: &mut AutoScunetAppParam) {
+    let config = &mut param.config;
+
     let login_util = ScunetLoginUtil::builder()
         .student_id(config.student_id.clone())
         .password(config.password.clone())
@@ -56,8 +61,9 @@ fn pre_login(config: &mut AppConfig) {
             exit(0);
         }
         Ok(LoginStatus::HaveLoggedIn) => {
-            Toast::logged_in();
+            param.logged_in = true;
             if *ON_BOOT.get().unwrap() {
+                Toast::logged_in();
                 exit(0);
             }
         }
