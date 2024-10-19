@@ -81,6 +81,12 @@ fn set_panic_hook() {
             "未知错误".to_string()
         };
 
-        Toast::error(msg);
+        let location = if let Some(loc) = info.location() {
+            format!("'{}' at line {}", loc.file(), loc.line())
+        } else {
+            "未知位置".to_string()
+        };
+
+        Toast::error(format!("{}:\n{}", location, msg));
     }));
 }
