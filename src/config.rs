@@ -1,6 +1,7 @@
+use std::sync::{LazyLock, OnceLock};
+
 use anyhow::Result;
 use auto_launch::{AutoLaunch, AutoLaunchBuilder};
-use once_cell::sync::{Lazy, OnceCell};
 use serde::{Deserialize, Serialize};
 
 use scunet_login_util::*;
@@ -11,11 +12,11 @@ pub const GITHUB_REPO: &str = "https://github.com/EastMonster/auto-scunet";
 
 const CONFIG_FILE_NAME: &str = "auto-scunet.toml";
 
-static CONFIG_FILE: OnceCell<String> = OnceCell::new();
+static CONFIG_FILE: OnceLock<String> = OnceLock::new();
 
-pub static ON_BOOT: OnceCell<bool> = OnceCell::new();
+pub static ON_BOOT: OnceLock<bool> = OnceLock::new();
 
-static AUTO_LAUNCH_CONF: Lazy<AutoLaunch> = Lazy::new(|| {
+static AUTO_LAUNCH_CONF: LazyLock<AutoLaunch> = LazyLock::new(|| {
     AutoLaunchBuilder::new()
         .set_app_name("AutoSCUNET")
         .set_app_path(std::env::current_exe().unwrap().to_str().unwrap())
