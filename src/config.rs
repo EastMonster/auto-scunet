@@ -2,6 +2,7 @@ use std::sync::{LazyLock, OnceLock};
 
 use anyhow::Result;
 use auto_launch::{AutoLaunch, AutoLaunchBuilder};
+use dirs::home_dir;
 use serde::{Deserialize, Serialize};
 
 use scunet_login_util::*;
@@ -45,11 +46,11 @@ pub fn load_config() -> Result<AppConfig> {
     let args: Vec<String> = std::env::args().collect();
     ON_BOOT.set(args.contains(&String::from("--boot"))).unwrap();
 
-    let pwd = std::env::current_exe()?.parent().unwrap().to_owned();
+    let home_dir = home_dir().unwrap();
 
     // 如此一来，配置文件位置就固定下来了
     CONFIG_FILE
-        .set(pwd.join(CONFIG_FILE_NAME).to_str().unwrap().to_owned())
+        .set(home_dir.join(CONFIG_FILE_NAME).to_str().unwrap().to_owned())
         .unwrap();
 
     let mut config: AppConfig =

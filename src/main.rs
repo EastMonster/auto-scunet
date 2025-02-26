@@ -14,7 +14,8 @@ use toast::*;
 fn main() -> Result<(), eframe::Error> {
     set_panic_hook();
 
-    let icon = eframe::icon_data::from_png_bytes(include_bytes!("..\\assets\\scu-logo.png")).unwrap();
+    let icon =
+        eframe::icon_data::from_png_bytes(include_bytes!("..\\assets\\scu-logo.png")).unwrap();
     let options = eframe::NativeOptions {
         viewport: egui::ViewportBuilder::default()
             .with_inner_size([320.0, 180.0])

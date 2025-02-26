@@ -37,7 +37,7 @@ impl AutoScunetApp {
         } else {
             Default::default()
         };
-        
+
         Self {
             tx,
             rx,
