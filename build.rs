@@ -8,6 +8,7 @@ fn main() {
         );
         res.set("ProductName", "AutoSCUNET");
         res.set("LegalCopyright", "Copyright (C) 2024 East Monster");
+        res.set_icon("assets/scu-logo.ico");
         res.compile().unwrap();
     }
 }
