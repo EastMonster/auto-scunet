@@ -56,8 +56,8 @@ impl AutoScunetApp {
 
         thread::spawn(move || {
             let login_util = ScunetLoginUtil::builder()
-                .student_id(student_id)
-                .password(password)
+                .student_id(&student_id)
+                .password(&password)
                 .service(service)
                 .build();
 

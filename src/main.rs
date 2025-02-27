@@ -45,8 +45,8 @@ fn pre_login(param: &mut AutoScunetAppParam) {
     let config = &mut param.config;
 
     let login_util = ScunetLoginUtil::builder()
-        .student_id(config.student_id.clone())
-        .password(config.password.clone())
+        .student_id(&config.student_id)
+        .password(&config.password)
         .service(config.service)
         .on_boot(*ON_BOOT.get().unwrap())
         .build();

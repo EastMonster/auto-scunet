@@ -25,32 +25,33 @@ const PAGE_INFO_URL: &str = "http://192.168.2.135/eportal/InterFace.do?method=pa
 /// ## 使用例
 /// ```
 /// let util = ScunetLoginUtil::builder()
-///     .student_id("2021xxxxxxxxx".into())
-///     .password("ilovescu!".into())
+///     .student_id("2021xxxxxxxxx")
+///     .password("ilovescu!")
 ///     .service(Service::Internet)
 ///     .on_boot(false) // 可选项
 ///     .build();
 ///
-/// match util.login() { // ...
+/// match util.login() {
+///     // ...
 /// }
 /// ```
 #[derive(TypedBuilder)]
-pub struct ScunetLoginUtil {
-    student_id: String,
-    password: String,
+pub struct ScunetLoginUtil<'a> {
+    student_id: &'a str,
+    password: &'a str,
     service: Service,
     #[builder(default = false)]
     on_boot: bool,
 }
 
-impl ScunetLoginUtil {
+impl<'a> ScunetLoginUtil<'a> {
     /// 设置学号
-    pub fn set_student_id(&mut self, student_id: String) {
+    pub fn set_student_id(&mut self, student_id: &'a str) {
         self.student_id = student_id;
     }
 
     /// 设置密码
-    pub fn set_password(&mut self, password: String) {
+    pub fn set_password(&mut self, password: &'a str) {
         self.password = password;
     }
 
@@ -84,14 +85,14 @@ impl ScunetLoginUtil {
 
         // 加密后的密码长度以后应该不会变的吧...
         let password = if self.password.len() == 256 {
-            self.password.clone()
+            self.password
         } else {
-            encrypt_password(&self.password, &query_string)?
+            &encrypt_password(self.password, &query_string)?
         };
 
         let login_form = [
-            ("userId", self.student_id.as_str()),
-            ("password", password.as_str()),
+            ("userId", self.student_id),
+            ("password", password),
             ("service", self.service.to_param()),
             ("queryString", query_string.as_str()),
             ("passwordEncrypt", "true"),
@@ -135,7 +136,7 @@ fn check_status(check_wifi: bool, on_boot: bool) -> Result<Status> {
     }
 }
 
-fn get_user_info(user_index: &str, password: String) -> Result<OnlineUserInfo> {
+fn get_user_info(user_index: &str, password: &str) -> Result<OnlineUserInfo> {
     let mut attempts = 0;
 
     loop {
@@ -157,7 +158,7 @@ fn get_user_info(user_index: &str, password: String) -> Result<OnlineUserInfo> {
             };
 
             json.left_hour = left_hour;
-            json.encrypted_password = password;
+            json.encrypted_password = password.to_owned();
             json.ballInfo.take(); // 不想再多看一眼
 
             return Ok(json);
