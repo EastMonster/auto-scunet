@@ -89,6 +89,66 @@ impl AutoScunetApp {
             self.logining = false;
         }
     }
+
+    fn render_login_form(&mut self, ui: &mut Ui, ctx: &Context) {
+        ui.horizontal(|ui| {
+            ui.label("学号:");
+            ui.text_edit_singleline(&mut self.config.student_id);
+        });
+        ui.horizontal(|ui| {
+            ui.label("密码:");
+            TextEdit::singleline(&mut self.config.password)
+                .password(true)
+                .ui(ui);
+        });
+        ui.horizontal(|ui| {
+            use Service::*;
+            ComboBox::from_label("")
+                .selected_text(self.config.service.to_str())
+                .show_ui(ui, |ui| {
+                    ui.selectable_value(&mut self.config.service, Internet, "校园网");
+                    ui.selectable_value(&mut self.config.service, ChinaMobile, "中国移动");
+                    ui.selectable_value(&mut self.config.service, ChinaTelecom, "中国电信");
+                    ui.selectable_value(&mut self.config.service, ChinaUnicom, "中国联通");
+                });
+            if ui.checkbox(&mut self.config.on_boot, "开机启动").changed() {
+                on_boot_change(self.config.on_boot)
+            }
+            ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
+                if ui
+                    .add_enabled(!self.logining, Button::new("登录"))
+                    .clicked()
+                {
+                    self.status = "正在登录...".to_string();
+                    self.logining = true;
+                    self.login(ctx.clone());
+                }
+            });
+        });
+    }
+
+    fn render_setting_modal(&mut self, ctx: &Context) {
+        let was_settings_open = self.show_setting_modal;
+
+        Window::new("设置")
+            .open(&mut self.show_setting_modal)
+            .max_width(200.0)
+            .collapsible(false)
+            .resizable(false)
+            .show(ctx, |ui| {
+                ui.horizontal(|ui| {
+                    ui.label("问候称呼");
+                    ui.text_edit_singleline(&mut self.config.greeting_name)
+                        .on_hover_text("留空则使用真实姓名")
+                });
+            });
+
+        if was_settings_open && !self.show_setting_modal {
+            self.config.greeting_name = self.config.greeting_name.trim().into();
+            save_config(&self.config).unwrap();
+            self.status = "配置已更新".into();
+        }
+    }
 }
 
 impl App for AutoScunetApp {
@@ -111,64 +171,12 @@ impl App for AutoScunetApp {
                     }
                 })
             });
-            ui.horizontal(|ui| {
-                ui.label("学号:");
-                ui.text_edit_singleline(&mut self.config.student_id);
-            });
-            ui.horizontal(|ui| {
-                ui.label("密码:");
-                TextEdit::singleline(&mut self.config.password)
-                    .password(true)
-                    .ui(ui);
-            });
-            ui.horizontal(|ui| {
-                use Service::*;
-                ComboBox::from_label("")
-                    .selected_text(self.config.service.to_str())
-                    .show_ui(ui, |ui| {
-                        ui.selectable_value(&mut self.config.service, Internet, "校园网");
-                        ui.selectable_value(&mut self.config.service, ChinaMobile, "中国移动");
-                        ui.selectable_value(&mut self.config.service, ChinaTelecom, "中国电信");
-                        ui.selectable_value(&mut self.config.service, ChinaUnicom, "中国联通");
-                    });
-                if ui.checkbox(&mut self.config.on_boot, "开机启动").changed() {
-                    on_boot_change(self.config.on_boot)
-                }
-                ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
-                    if ui
-                        .add_enabled(!self.logining, Button::new("登录"))
-                        .clicked()
-                    {
-                        self.status = "正在登录...".to_string();
-                        self.logining = true;
-                        self.login(ctx.clone());
-                    }
-                });
-            });
+            self.render_login_form(ui, ctx);
             ui.add_space(8.0);
             ui.vertical_centered_justified(|ui| ui.label(&self.status));
         });
 
-        let was_settings_open = self.show_setting_modal;
-
-        Window::new("设置")
-            .open(&mut self.show_setting_modal)
-            .max_width(200.0)
-            .collapsible(false)
-            .resizable(false)
-            .show(ctx, |ui| {
-                ui.horizontal(|ui| {
-                    ui.label("问候称呼");
-                    ui.text_edit_singleline(&mut self.config.greeting_name)
-                        .on_hover_text("留空则使用真实姓名")
-                });
-            });
-
-        if was_settings_open && !self.show_setting_modal {
-            self.config.greeting_name = self.config.greeting_name.trim().into();
-            save_config(&self.config).unwrap();
-            self.status = "配置已更新".into();
-        }
+        self.render_setting_modal(ctx);
     }
 }
 
