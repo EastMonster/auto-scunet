@@ -90,6 +90,26 @@ impl AutoScunetApp {
         }
     }
 
+    fn render_header(&mut self, ui: &mut Ui) {
+        ui.horizontal(|ui| {
+            ui.heading("登录到 SCUNET");
+            ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
+                if self.config.show_github_button {
+                    if ui
+                        .button(format!(" {} ", special_emojis::GITHUB))
+                        .on_hover_text("查看 GitHub 仓库")
+                        .clicked()
+                    {
+                        webbrowser::open(GITHUB_REPO).unwrap();
+                    }
+                }
+                if ui.button("设置").clicked() {
+                    self.show_setting_modal = true;
+                }
+            })
+        });
+    }
+
     fn render_login_form(&mut self, ui: &mut Ui, ctx: &Context) {
         ui.horizontal(|ui| {
             ui.label("学号:");
@@ -142,6 +162,21 @@ impl AutoScunetApp {
                     ui.text_edit_singleline(&mut self.config.greeting_name)
                         .on_hover_text("留空则使用真实姓名")
                 });
+                ui.horizontal(|ui| {
+                    if ui
+                        .checkbox(&mut self.config.enable_toast, "启用通知")
+                        .changed()
+                    {
+                        *IS_TOAST_ENABLED.write().unwrap() = self.config.enable_toast;
+                        save_config(&self.config).unwrap();
+                    }
+                    if ui
+                        .checkbox(&mut self.config.show_github_button, "显示 GitHub 按钮")
+                        .changed()
+                    {
+                        save_config(&self.config).unwrap();
+                    }
+                })
             });
 
         if was_settings_open && !self.show_setting_modal {
@@ -157,21 +192,7 @@ impl App for AutoScunetApp {
         self.handle_login_result();
 
         CentralPanel::default().show(ctx, |ui| {
-            ui.horizontal(|ui| {
-                ui.heading("登录到 SCUNET");
-                ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
-                    if ui
-                        .button(format!(" {} ", special_emojis::GITHUB))
-                        .on_hover_text("查看 GitHub 仓库")
-                        .clicked()
-                    {
-                        webbrowser::open(GITHUB_REPO).unwrap();
-                    }
-                    if ui.button("设置").clicked() {
-                        self.show_setting_modal = true;
-                    }
-                })
-            });
+            self.render_header(ui);
             self.render_login_form(ui, ctx);
             ui.add_space(8.0);
             ui.vertical_centered_justified(|ui| ui.label(&self.status));

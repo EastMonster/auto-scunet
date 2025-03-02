@@ -1,4 +1,4 @@
-use std::sync::{Arc, LazyLock, OnceLock};
+use std::sync::{Arc, LazyLock, OnceLock, RwLock};
 
 use anyhow::Result;
 use auto_launch::{AutoLaunch, AutoLaunchBuilder};
@@ -22,6 +22,8 @@ const CONFIG_FILE_NAME: &str = "auto-scunet.toml";
 const WINDOWS_APP_USER_MODEL_ID: &str = "EastMonster.AutoScunet";
 
 static CONFIG_FILE: OnceLock<String> = OnceLock::new();
+
+pub static IS_TOAST_ENABLED: LazyLock<RwLock<bool>> = LazyLock::new(|| RwLock::new(true));
 
 pub static ON_BOOT: OnceLock<bool> = OnceLock::new();
 
@@ -49,7 +51,14 @@ pub struct AppConfig {
     pub on_boot: bool,
     // 设置窗口选项
     pub greeting_name: String,
+    #[serde(default = "bool_true")]
+    pub enable_toast: bool,
+    #[serde(default = "bool_true")]
+    pub show_github_button: bool,
 }
+
+#[rustfmt::skip]
+fn bool_true() -> bool { true }
 
 pub fn on_boot_change(val: bool) {
     let auto = &AUTO_LAUNCH_CONF;
@@ -105,6 +114,8 @@ pub fn load_config() -> Result<AppConfig> {
     let mut config: AppConfig =
         toml::from_str(&std::fs::read_to_string(CONFIG_FILE.get().unwrap())?)?;
     config.on_boot = AUTO_LAUNCH_CONF.is_enabled().unwrap();
+
+    *IS_TOAST_ENABLED.write().unwrap() = config.enable_toast;
 
     Ok(config)
 }
