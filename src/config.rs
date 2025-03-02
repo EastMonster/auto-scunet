@@ -39,13 +39,16 @@ static AUTO_LAUNCH_CONF: LazyLock<AutoLaunch> = LazyLock::new(|| {
 });
 
 #[derive(Debug, Default, Serialize, Deserialize)]
+#[serde(default)]
 pub struct AppConfig {
+    // 主窗口选项
     pub student_id: String,
     pub password: String,
     pub service: Service,
-    pub greeting_name: String,
     #[serde(skip_serializing, skip_deserializing)]
     pub on_boot: bool,
+    // 设置窗口选项
+    pub greeting_name: String,
 }
 
 pub fn on_boot_change(val: bool) {
