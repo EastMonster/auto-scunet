@@ -135,6 +135,7 @@ impl AutoScunetApp {
             .max_width(200.0)
             .collapsible(false)
             .resizable(false)
+            .pivot(Align2::CENTER_CENTER)
             .show(ctx, |ui| {
                 ui.horizontal(|ui| {
                     ui.label("问候称呼");
