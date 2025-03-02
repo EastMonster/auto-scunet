@@ -14,15 +14,13 @@ use toast::*;
 fn main() -> Result<(), eframe::Error> {
     set_panic_hook();
 
-    let icon =
-        eframe::icon_data::from_png_bytes(include_bytes!("..\\assets\\scu-logo.png")).unwrap();
     let options = eframe::NativeOptions {
         viewport: egui::ViewportBuilder::default()
             .with_inner_size([320.0, 180.0])
             .with_resizable(false)
             .with_maximize_button(false)
             .with_minimize_button(false)
-            .with_icon(icon),
+            .with_icon(ICON_DATA.clone()),
         centered: true,
         ..Default::default()
     };

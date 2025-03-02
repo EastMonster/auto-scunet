@@ -44,7 +44,9 @@ use notify_rust::Notification;
 
 #[cfg(target_os = "windows")]
 fn new_toast() -> WinToastNotify {
-    WinToastNotify::new().set_app_id("Microsoft.Windows.Shell.RunDialog")
+    WinToastNotify::new()
+        .set_app_id("EastMonster.AutoScunet")
+        .set_notif_open("")
 }
 
 fn _success(title: &str, body: Vec<&str>) {
