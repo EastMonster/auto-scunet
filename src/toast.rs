@@ -46,13 +46,13 @@ impl Toast {
     }
 }
 
-#[cfg(target_os = "windows")]
+#[cfg(windows)]
 use win_toast_notify::{Action, WinToastNotify};
 
-#[cfg(not(target_os = "windows"))]
+#[cfg(not(windows))]
 use notify_rust::Notification;
 
-#[cfg(target_os = "windows")]
+#[cfg(windows)]
 fn new_toast() -> WinToastNotify {
     WinToastNotify::new()
         .set_app_id("EastMonster.AutoScunet")
@@ -60,9 +60,9 @@ fn new_toast() -> WinToastNotify {
 }
 
 fn _success(title: &str, body: Vec<&str>) {
-    #[cfg(target_os = "windows")]
+    #[cfg(windows)]
     new_toast().set_title(title).set_messages(body).show().ok();
-    #[cfg(not(target_os = "windows"))]
+    #[cfg(not(windows))]
     Notification::new()
         .summary(title)
         .body(&body.join("\n"))
@@ -71,13 +71,13 @@ fn _success(title: &str, body: Vec<&str>) {
 }
 
 fn _fail(msg: impl ToString) {
-    #[cfg(target_os = "windows")]
+    #[cfg(windows)]
     new_toast()
         .set_title("登录失败")
         .set_messages(vec![&msg.to_string(), "请手动调整配置或检查网络状态"])
         .show()
         .ok();
-    #[cfg(not(target_os = "windows"))]
+    #[cfg(not(windows))]
     Notification::new()
         .summary("登录失败")
         .body(&format!(
@@ -89,13 +89,13 @@ fn _fail(msg: impl ToString) {
 }
 
 fn _logged_in() {
-    #[cfg(target_os = "windows")]
+    #[cfg(windows)]
     new_toast()
         .set_title("你已登录到 SCUNET")
         .set_messages(vec!["你可以再次\"登录\"来更新配置"])
         .show()
         .ok();
-    #[cfg(not(target_os = "windows"))]
+    #[cfg(not(windows))]
     Notification::new()
         .summary("你已登录到 SCUNET")
         .body("你可以再次\"登录\"来更新配置")
@@ -104,7 +104,7 @@ fn _logged_in() {
 }
 
 fn _error(msg: impl ToString) {
-    #[cfg(target_os = "windows")]
+    #[cfg(windows)]
     new_toast()
         .set_title("😭😭😭 程序出错了")
         .set_messages(vec![&msg.to_string(), "可以考虑提一个 Issue"])
@@ -116,7 +116,7 @@ fn _error(msg: impl ToString) {
         }])
         .show()
         .ok();
-    #[cfg(not(target_os = "windows"))]
+    #[cfg(not(windows))]
     Notification::new()
         .summary("😭😭😭 程序出错了")
         .body(&format!("{}\n可以考虑提一个 Issue", msg.to_string()))

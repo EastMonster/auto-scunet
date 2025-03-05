@@ -3,14 +3,14 @@
 use crate::LoginError;
 
 pub fn check_wifi(on_boot: bool) -> Result<(), LoginError> {
-    #[cfg(target_os = "windows")]
+    #[cfg(windows)]
     return windows::check_wifi(on_boot);
 
-    #[cfg(not(target_os = "windows"))]
+    #[cfg(not(windows))]
     return _others::check_wifi(on_boot);
 }
 
-#[cfg(target_os = "windows")]
+#[cfg(windows)]
 mod windows {
     use std::{ffi::c_void, thread::sleep, time::Duration};
 
@@ -115,7 +115,7 @@ mod windows {
     }
 }
 
-#[cfg(not(target_os = "windows"))]
+#[cfg(not(windows))]
 mod _others {
     use crate::LoginError;
 

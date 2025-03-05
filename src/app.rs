@@ -94,14 +94,13 @@ impl AutoScunetApp {
         ui.horizontal(|ui| {
             ui.heading("登录到 SCUNET");
             ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
-                if self.config.show_github_button {
-                    if ui
+                if self.config.show_github_button
+                    && ui
                         .button(format!(" {} ", special_emojis::GITHUB))
                         .on_hover_text("查看 GitHub 仓库")
                         .clicked()
-                    {
-                        webbrowser::open(GITHUB_REPO).unwrap();
-                    }
+                {
+                    webbrowser::open(GITHUB_REPO).unwrap();
                 }
                 if ui.button("设置").clicked() {
                     self.show_setting_modal = true;
@@ -205,9 +204,9 @@ impl App for AutoScunetApp {
 fn set_font(cc: &Context) {
     let mut fonts = FontDefinitions::default();
 
-    #[cfg(target_os = "windows")]
+    #[cfg(windows)]
     let font_paths = ["C:/Windows/Fonts/msyh.ttc"];
-    #[cfg(not(target_os = "windows"))]
+    #[cfg(not(windows))]
     let font_paths = [
         "/usr/share/fonts/noto-cjk/NotoSansCJK-Regular.ttc", // Arch Linux: pacman -S noto-fonts-cjk
         "/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc", // Ubuntu 22.04: apt install fonts-noto-cjk
