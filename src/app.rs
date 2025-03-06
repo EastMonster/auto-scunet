@@ -216,7 +216,7 @@ fn set_font(cc: &Context) {
 
     fonts
         .font_data
-        .insert("Custom".to_owned(), FontData::from_owned(font_data));
+        .insert("Custom".to_owned(), FontData::from_owned(font_data).into());
 
     fonts
         .families
