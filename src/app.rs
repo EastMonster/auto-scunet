@@ -12,6 +12,7 @@ use crate::{config::*, Toast};
 
 use scunet_login_util::*;
 
+#[derive(Clone)]
 pub struct AutoScunetAppParam {
     pub config: AppConfig,
     pub logged_in: bool,
@@ -25,6 +26,14 @@ pub struct AutoScunetApp {
     logining: bool,
     status: String,
     show_setting_modal: bool,
+
+    temp_setting_value: TempSettingValue,
+}
+
+struct TempSettingValue {
+    greeting_name: String,
+    enable_toast: bool,
+    show_github_button: bool,
 }
 
 impl AutoScunetApp {
@@ -41,10 +50,15 @@ impl AutoScunetApp {
         Self {
             tx,
             rx,
-            config: param.config,
             logining: false,
             status,
             show_setting_modal: false,
+            temp_setting_value: TempSettingValue {
+                greeting_name: param.config.greeting_name.clone(),
+                enable_toast: param.config.enable_toast,
+                show_github_button: param.config.show_github_button,
+            },
+            config: param.config,
         }
     }
 
@@ -147,39 +161,60 @@ impl AutoScunetApp {
     }
 
     fn render_setting_modal(&mut self, ctx: &Context) {
-        let was_settings_open = self.show_setting_modal;
+        let modal_was_open = ctx.memory(|mem| {
+            mem.data
+                .get_temp::<bool>("setting_modal_was_open".into())
+                .unwrap_or(false)
+        });
 
-        Window::new("设置")
-            .open(&mut self.show_setting_modal)
-            .max_width(200.0)
-            .collapsible(false)
-            .resizable(false)
-            .pivot(Align2::CENTER_CENTER)
-            .show(ctx, |ui| {
+        ctx.memory_mut(|mem| {
+            mem.data
+                .insert_temp("setting_modal_was_open".into(), self.show_setting_modal)
+        });
+        let mut save = false;
+
+        if !modal_was_open && self.show_setting_modal {
+            self.temp_setting_value = TempSettingValue {
+                greeting_name: self.config.greeting_name.clone(),
+                enable_toast: self.config.enable_toast,
+                show_github_button: self.config.show_github_button,
+            };
+        }
+
+        if self.show_setting_modal {
+            Modal::new("setting".into()).show(ctx, |ui| {
                 ui.horizontal(|ui| {
                     ui.label("问候称呼");
-                    ui.text_edit_singleline(&mut self.config.greeting_name)
+                    ui.text_edit_singleline(&mut self.temp_setting_value.greeting_name)
                         .on_hover_text("留空则使用真实姓名")
                 });
                 ui.horizontal(|ui| {
-                    if ui
-                        .checkbox(&mut self.config.enable_toast, "启用通知")
-                        .changed()
-                    {
-                        *IS_TOAST_ENABLED.write().unwrap() = self.config.enable_toast;
-                        save_config(&self.config).unwrap();
-                    }
-                    if ui
-                        .checkbox(&mut self.config.show_github_button, "显示 GitHub 按钮")
-                        .changed()
-                    {
-                        save_config(&self.config).unwrap();
-                    }
-                })
+                    ui.checkbox(&mut self.temp_setting_value.enable_toast, "启用通知");
+                    ui.checkbox(
+                        &mut self.temp_setting_value.show_github_button,
+                        "显示 GitHub 按钮",
+                    );
+                });
+                ui.horizontal(|ui| {
+                    ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
+                        if ui.button("保存").clicked() {
+                            self.show_setting_modal = false;
+                            save = true;
+                        }
+                        if ui.button("取消").clicked() {
+                            self.show_setting_modal = false;
+                        }
+                    })
+                });
             });
+        }
 
-        if was_settings_open && !self.show_setting_modal {
-            self.config.greeting_name = self.config.greeting_name.trim().into();
+        if modal_was_open && !self.show_setting_modal && save {
+            self.config.greeting_name = self.temp_setting_value.greeting_name.trim().into();
+            self.config.enable_toast = self.temp_setting_value.enable_toast;
+            *IS_TOAST_ENABLED.write().unwrap() = self.config.enable_toast;
+            self.config.show_github_button = self.temp_setting_value.show_github_button;
+
             save_config(&self.config).unwrap();
             self.status = "配置已更新".into();
         }

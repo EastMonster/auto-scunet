@@ -36,7 +36,7 @@ static AUTO_LAUNCH_CONF: LazyLock<AutoLaunch> = LazyLock::new(|| {
         .unwrap()
 });
 
-#[derive(Debug, Default, Serialize, Deserialize)]
+#[derive(Clone, Debug, Default, Serialize, Deserialize)]
 #[serde(default)]
 pub struct AppConfig {
     // 主窗口选项
