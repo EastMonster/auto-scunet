@@ -28,6 +28,7 @@ fn main() -> Result<(), eframe::Error> {
     let mut param = AutoScunetAppParam {
         config: load_config().unwrap_or_default(),
         logged_in: false,
+        not_connected_to_scunet: false,
     };
 
     pre_login(&mut param);
@@ -74,7 +75,18 @@ fn pre_login(param: &mut AutoScunetAppParam) {
                 exit(0);
             }
         }
-        Err(e) => Toast::fail(e),
+        Err(e) => {
+            // 如果现在没连接到校园网，则直接跳过
+            if let Some(LoginError::NotConnectedToScunet) = e.downcast_ref::<LoginError>() {
+                if on_boot {
+                    exit(0);
+                } else {
+                    param.not_connected_to_scunet = true;
+                }
+            } else {
+                Toast::fail(e);
+            }
+        }
     }
 }
 

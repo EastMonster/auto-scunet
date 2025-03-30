@@ -15,6 +15,7 @@ use scunet_login_util::*;
 pub struct AutoScunetAppParam {
     pub config: AppConfig,
     pub logged_in: bool,
+    pub not_connected_to_scunet: bool,
 }
 
 pub struct AutoScunetApp {
@@ -34,6 +35,8 @@ impl AutoScunetApp {
 
         let status = if param.logged_in {
             "你目前已登录到 SCUNET!".to_string()
+        } else if param.not_connected_to_scunet {
+            "你目前未连接到 SCUNET!".to_string()
         } else {
             Default::default()
         };
