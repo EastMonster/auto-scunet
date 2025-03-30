@@ -162,6 +162,11 @@ impl AutoScunetApp {
                         .on_hover_text("留空则使用真实姓名")
                 });
                 ui.horizontal(|ui| {
+                    ui.label("开机启动延迟");
+                    ui.text_edit_singleline(&mut self.config.on_boot_delay.to_string())
+                        .on_hover_text("设置开机启动延迟, 单位: 秒")
+                });
+                ui.horizontal(|ui| {
                     if ui
                         .checkbox(&mut self.config.enable_toast, "启用通知")
                         .changed()

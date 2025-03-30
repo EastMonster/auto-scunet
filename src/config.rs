@@ -51,10 +51,15 @@ pub struct AppConfig {
     pub enable_toast: bool,
     #[serde(default = "bool_true")]
     pub show_github_button: bool,
+    #[serde(default = "delay_default")]
+    pub on_boot_delay: i32,
 }
 
 #[rustfmt::skip]
 fn bool_true() -> bool { true }
+
+#[rustfmt::skip]
+fn delay_default() -> i32 { 3 }
 
 pub fn on_boot_change(val: bool) {
     let auto = &AUTO_LAUNCH_CONF;

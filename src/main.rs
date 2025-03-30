@@ -4,7 +4,7 @@ mod app;
 mod config;
 mod toast;
 
-use std::process::exit;
+use std::{process::exit, thread::sleep, time::Duration};
 
 use app::{AutoScunetApp, AutoScunetAppParam};
 use config::*;
@@ -49,6 +49,12 @@ fn pre_login(param: &mut AutoScunetAppParam) {
         .on_boot(*ON_BOOT.get().unwrap())
         .build();
 
+    let on_boot = *ON_BOOT.get().unwrap();
+    let delay = config.on_boot_delay;
+    if on_boot && delay > 0 {
+        sleep(Duration::from_secs(delay as u64));
+    }
+
     match login_util.login() {
         Ok(LoginStatus::Success(user_info)) => {
             config.password = user_info.encrypted_password;
@@ -63,7 +69,7 @@ fn pre_login(param: &mut AutoScunetAppParam) {
         }
         Ok(LoginStatus::HaveLoggedIn) => {
             param.logged_in = true;
-            if *ON_BOOT.get().unwrap() {
+            if on_boot {
                 Toast::logged_in();
                 exit(0);
             }

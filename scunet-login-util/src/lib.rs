@@ -114,11 +114,6 @@ fn check_status(check_wifi: bool, on_boot: bool) -> Result<Status> {
         wifi::check_wifi(on_boot)?;
     }
 
-    // 在 Release 模式下开机启动时这里会炸掉，原因不明
-    // 只能整个 workaround 等待 2 秒
-    if on_boot {
-        sleep(Duration::from_secs(2));
-    }
     let res = ureq::get(BASE_URL).call()?;
 
     if res.status() != 200 {
