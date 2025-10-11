@@ -8,7 +8,7 @@ use std::{
     thread,
 };
 
-use crate::{config::*, Toast};
+use crate::{Toast, config::*};
 
 use scunet_login_util::*;
 
@@ -166,8 +166,12 @@ impl AutoScunetApp {
                 });
                 ui.horizontal(|ui| {
                     ui.label("开机启动延迟");
-                    ui.text_edit_singleline(&mut self.config.on_boot_delay.to_string())
-                        .on_hover_text("设置开机启动延迟, 单位: 秒")
+                    ui.add(
+                        DragValue::new(&mut self.config.on_boot_delay)
+                            .range(0..=5)
+                            .suffix(" 秒")
+                            .speed(0.1),
+                    );
                 });
                 ui.horizontal(|ui| {
                     if ui

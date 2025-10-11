@@ -52,7 +52,7 @@ fn pre_login(param: &mut AutoScunetAppParam) {
 
     let on_boot = *ON_BOOT.get().unwrap();
     let delay = config.on_boot_delay;
-    if on_boot && delay > 0 {
+    if on_boot && delay > 0.0 {
         sleep(Duration::from_secs(delay as u64));
     }
 
