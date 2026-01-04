@@ -60,8 +60,10 @@ pub enum LoginError {
     Fail(String),
     #[error("连接超时")]
     TimeOut,
+    #[cfg(windows)]
     #[error("错误 {1}: {0}")]
     WiFiStatusError(&'static str, u32),
+    #[cfg(windows)]
     #[error("未连接到 SCUNET")]
     NotConnectedToScunet,
 }

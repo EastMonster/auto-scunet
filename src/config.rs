@@ -67,7 +67,6 @@ pub fn on_boot_change(val: bool) {
     if val { auto.enable() } else { auto.disable() }.unwrap();
 }
 
-#[allow(unused)]
 fn init_register() -> Result<()> {
     let icon_path = dirs::cache_dir().unwrap().join("auto-scunet.png");
     if !icon_path.exists() {
@@ -86,9 +85,7 @@ fn init_register() -> Result<()> {
 }
 
 pub fn load_config() -> Result<AppConfig> {
-    if cfg!(windows) {
-        init_register()?;
-    }
+    init_register()?;
 
     let args: Vec<String> = std::env::args().collect();
     ON_BOOT.set(args.contains(&String::from("--boot"))).unwrap();

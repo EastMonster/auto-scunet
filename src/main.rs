@@ -78,6 +78,7 @@ fn pre_login(param: &mut AutoScunetAppParam) {
         }
         Err(e) => {
             // 如果现在没连接到校园网，则直接跳过
+            #[cfg(windows)]
             if let Some(LoginError::NotConnectedToScunet) = e.downcast_ref::<LoginError>() {
                 if on_boot {
                     exit(0);
@@ -87,6 +88,9 @@ fn pre_login(param: &mut AutoScunetAppParam) {
             } else {
                 Toast::fail(e);
             }
+            
+            #[cfg(not(windows))]
+            Toast::fail(e);
         }
     }
 }
