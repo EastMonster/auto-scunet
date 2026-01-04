@@ -24,7 +24,7 @@ pub static IS_TOAST_ENABLED: LazyLock<RwLock<bool>> = LazyLock::new(|| RwLock::n
 pub static ON_BOOT: OnceLock<bool> = OnceLock::new();
 
 pub static ICON_DATA: LazyLock<Arc<IconData>> = LazyLock::new(|| {
-    Arc::new(eframe::icon_data::from_png_bytes(include_bytes!("..\\assets\\scu-logo.png")).unwrap())
+    Arc::new(eframe::icon_data::from_png_bytes(include_bytes!("../assets/scu-logo.png")).unwrap())
 });
 
 static AUTO_LAUNCH_CONF: LazyLock<AutoLaunch> = LazyLock::new(|| {

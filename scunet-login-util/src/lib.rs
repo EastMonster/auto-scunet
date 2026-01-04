@@ -45,21 +45,25 @@ pub struct ScunetLoginUtil<'a> {
 }
 
 impl<'a> ScunetLoginUtil<'a> {
+    #[allow(dead_code)]
     /// 设置学号
     pub fn set_student_id(&mut self, student_id: &'a str) {
         self.student_id = student_id;
     }
 
+    #[allow(dead_code)]
     /// 设置密码
     pub fn set_password(&mut self, password: &'a str) {
         self.password = password;
     }
 
+    #[allow(dead_code)]
     /// 设置服务商
     pub fn set_service(&mut self, service: Service) {
         self.service = service;
     }
 
+    #[allow(dead_code)]
     /// 设置是否为开机启动状态
     pub fn set_on_boot(&mut self, on_boot: bool) {
         self.on_boot = on_boot;
@@ -155,18 +159,12 @@ fn get_user_info(user_index: &str, password: &str, service: Service) -> Result<O
             let ball_info = serde_json::from_str::<Vec<BallInfoJson>>(json.ballInfo.as_ref().unwrap())?;
 
             // 教学区使用校园网会出现没有 ballInfo 的情况
-            if ball_info.len() >= 1 {
-                let left_second_str = &ball_info[1].value;
-
-                let left_hour = match left_second_str {
-                    Some(left_second) => match left_second.parse::<f64>() {
-                        Ok(v) => Some((v / 3600.0 * 10.0).round() / 10.0),
-                        Err(_) => None,
-                    },
-                    None => None,
-                };
-
-                json.left_hour = left_hour;
+            if !ball_info.is_empty() {
+                json.left_hour = ball_info[1]
+                    .value
+                    .as_ref()
+                    .and_then(|s| s.parse::<f64>().ok())
+                    .map(|v| (v / 3600.0 * 10.0).round() / 10.0);
             }
             json.encrypted_password = password.to_owned();
             json.service = service;
