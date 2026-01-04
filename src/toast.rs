@@ -1,14 +1,21 @@
-use crate::{config::IS_TOAST_ENABLED, AppConfig};
+use crate::{AppConfig, config::IS_TOAST_ENABLED};
+use scunet_login_util::Service;
 
 pub struct Toast;
 
 impl Toast {
-    pub fn success(name: String, tip: String, time: Option<f64>, config: &AppConfig) {
+    pub fn success(
+        name: String,
+        tip: String,
+        time: Option<f64>,
+        service: Service,
+        config: &AppConfig,
+    ) {
         if !config.enable_toast {
             return;
         }
 
-        let main_msg = format!("你已登录到 SCUNET ({})", config.service.to_str());
+        let main_msg = format!("你已登录到 SCUNET ({})", service.to_str());
         let mut messages = vec![main_msg];
 
         if let Some(t) = time {

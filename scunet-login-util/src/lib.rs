@@ -24,7 +24,7 @@ const PAGE_INFO_URL: &str = "http://192.168.2.135/eportal/InterFace.do?method=pa
 ///
 /// ## 使用例
 /// ```
-/// let util = ScunetLoginUtil::builder()
+/// let mut util = ScunetLoginUtil::builder()
 ///     .student_id("2021xxxxxxxxx")
 ///     .password("ilovescu!")
 ///     .service(Service::Internet)
@@ -69,6 +69,8 @@ impl<'a> ScunetLoginUtil<'a> {
     ///
     /// 登录成功时会返回 [`LoginStatus::Success`]，并附带用户信息 [`OnlineUserInfo`]
     ///
+    /// 如果使用运营商登录失败且错误为 terminal failed，会自动回退到校园网登录
+    ///
     /// ## 使用例
     /// ```
     /// match util.login() {
@@ -77,7 +79,7 @@ impl<'a> ScunetLoginUtil<'a> {
     ///     Err(e) => {},
     /// }
     /// ```
-    pub fn login(&self) -> Result<LoginStatus> {
+    pub fn login(&mut self) -> Result<LoginStatus> {
         let query_string = match check_status(true, self.on_boot)? {
             Status::LoggedIn(_) => return Ok(LoginStatus::HaveLoggedIn),
             Status::NotLoggedIn(qs) => qs,
@@ -102,9 +104,19 @@ impl<'a> ScunetLoginUtil<'a> {
 
         match check_status(false, false)? {
             Status::LoggedIn(user_index) => {
-                Ok(LoginStatus::Success(get_user_info(&user_index, password)?))
+                Ok(LoginStatus::Success(get_user_info(&user_index, password, self.service)?))
             }
-            _ => Err(LoginError::Fail(json.message).into()),
+            _ => {
+                let err = LoginError::Fail(json.message);
+                // 如果是教学区使用运营商登录失败，则回退到校园网
+                // 但只尝试一次 fallback，如果当前已经是校园网服务则不再尝试
+                if err.to_string().contains("terminal failed") && self.service != Service::Internet {
+                    self.service = Service::Internet;
+                    // 递归调用，使用校园网重试
+                    return self.login();
+                }
+                Err(err.into())
+            }
         }
     }
 }
@@ -131,7 +143,7 @@ fn check_status(check_wifi: bool, on_boot: bool) -> Result<Status> {
     }
 }
 
-fn get_user_info(user_index: &str, password: &str) -> Result<OnlineUserInfo> {
+fn get_user_info(user_index: &str, password: &str, service: Service) -> Result<OnlineUserInfo> {
     let mut attempts = 0;
 
     loop {
@@ -140,20 +152,24 @@ fn get_user_info(user_index: &str, password: &str) -> Result<OnlineUserInfo> {
             .into_json()?;
 
         if json.result == "success" {
-            let left_second_str =
-                &serde_json::from_str::<Vec<BallInfoJson>>(json.ballInfo.as_ref().unwrap())?[1]
-                    .value;
+            let ball_info = serde_json::from_str::<Vec<BallInfoJson>>(json.ballInfo.as_ref().unwrap())?;
 
-            let left_hour = match left_second_str {
-                Some(left_second) => match left_second.parse::<f64>() {
-                    Ok(v) => Some((v / 3600.0 * 10.0).round() / 10.0),
-                    Err(_) => None,
-                },
-                None => None,
-            };
+            // 教学区使用校园网会出现没有 ballInfo 的情况
+            if ball_info.len() >= 1 {
+                let left_second_str = &ball_info[1].value;
 
-            json.left_hour = left_hour;
+                let left_hour = match left_second_str {
+                    Some(left_second) => match left_second.parse::<f64>() {
+                        Ok(v) => Some((v / 3600.0 * 10.0).round() / 10.0),
+                        Err(_) => None,
+                    },
+                    None => None,
+                };
+
+                json.left_hour = left_hour;
+            }
             json.encrypted_password = password.to_owned();
+            json.service = service;
             json.ballInfo.take(); // 不想再多看一眼
 
             return Ok(json);

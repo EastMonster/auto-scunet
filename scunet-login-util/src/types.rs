@@ -102,4 +102,7 @@ pub struct OnlineUserInfo {
     /// 加密后的密码字符串
     #[serde(skip_deserializing)]
     pub encrypted_password: String,
+    /// 实际使用的服务
+    #[serde(skip_deserializing)]
+    pub service: Service,
 }

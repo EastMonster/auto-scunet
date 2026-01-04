@@ -58,7 +58,7 @@ impl AutoScunetApp {
         let service = self.config.service;
 
         thread::spawn(move || {
-            let login_util = ScunetLoginUtil::builder()
+            let mut login_util = ScunetLoginUtil::builder()
                 .student_id(&student_id)
                 .password(&password)
                 .service(service)
@@ -83,11 +83,14 @@ impl AutoScunetApp {
                         user_info.userName,
                         user_info.welcomeTip,
                         user_info.left_hour,
+                        user_info.service,
                         &self.config,
                     );
                     exit(0);
                 }
-                Err(err) => self.status = err.to_string(),
+                Err(err) => {
+                    self.status = err.to_string();
+                }
             }
             self.logining = false;
         }
@@ -206,7 +209,7 @@ impl App for AutoScunetApp {
             self.render_header(ui);
             self.render_login_form(ui, ctx);
             ui.add_space(8.0);
-            ui.vertical_centered_justified(|ui| ui.label(&self.status));
+            ui.vertical_centered_justified(|ui| ui.add(Label::new(&self.status)));
         });
 
         self.render_setting_modal(ctx);
