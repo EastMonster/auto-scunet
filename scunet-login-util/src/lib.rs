@@ -155,12 +155,15 @@ fn get_user_info(user_index: &str, password: &str, service: Service) -> Result<O
             .send_form(&[("userIndex", user_index)])?
             .into_json()?;
 
-        if json.result == "success" {
-            let ball_info = serde_json::from_str::<Vec<BallInfoJson>>(json.ballInfo.as_ref().unwrap())?;
+        if json.result == "success" || json.result == "wait" {
+            let ball_info = match json.ballInfo.as_ref() {
+                Some(s) if !s.is_empty() => serde_json::from_str::<Vec<BallInfoJson>>(s).ok(),
+                _ => None,
+            };
 
             // 教学区使用校园网会出现没有 ballInfo 的情况
-            if !ball_info.is_empty() {
-                json.left_hour = ball_info[1]
+            if let Some(info) = ball_info {
+                json.left_hour = info[1]
                     .value
                     .as_ref()
                     .and_then(|s| s.parse::<f64>().ok())
